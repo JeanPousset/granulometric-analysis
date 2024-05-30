@@ -1,6 +1,6 @@
-xrld
 numpy
 panda
 matplotlib
 scikit-learn
 plotly
+xlrd==2.0.1
