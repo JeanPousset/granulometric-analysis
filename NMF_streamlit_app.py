@@ -292,7 +292,6 @@ with tab_robust:
 
             st.plotly_chart(fig)
 
-
 with tab_ref_expert:
     st.header("Approximation of our observation by reference curves")
     st.markdown("""In this section we don't use any NMF algorithm. Instead we use reference curves 
@@ -300,73 +299,81 @@ with tab_ref_expert:
                 pure by experts. We're going to use these curves to compare them with the end-members
                 we find and also to build differents approximations. """)
 
-st.subheader("List of reference curves")
-st.markdown("""There are 8 differents reference curves that are mainly characterised by the location 
-            of the peak on the x axis (diametre in $\\mu m$). You can see them bellow. You can see 
-            their plots below.""")
-
-# region plot ref curves
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
-              ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesClassiques'][0, :], y=st.session_state['ref_curves']
-              ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Alterites'][0, :], y=st.session_state['ref_curves']
-              ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesFins'][0, :], y=st.session_state['ref_curves']
-              ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesGrossiers'][0, :], y=st.session_state['ref_curves']
-              ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
-
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
-              ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
-fig.update_xaxes(type="log",tickformat=".1e",dtick=1)
-fig.update_layout(
-    height=500,
-    showlegend=True
-)
-st.plotly_chart(fig)
+    st.subheader("List of reference curves")
+    st.markdown(f"""There are 8 differents reference curves that are mainly characterised by the location 
+                of the peak on the x axis (diametre in $\\mu m$). You can see their plots below. You can also
+                get more information on how these curves were obtainend by downloading the rapport with the 
+                following button. """)
+    with open('bibliography/2023-05-31_rapport_analyse_terre_crue.pdf','rb') as f:
+        st.download_button('Download report', f, file_name = '2023-05-31_rapport_analyse_terre_crue.pdf')
 
 
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesClassiques'][0, :], y=st.session_state['ref_curves']
-              ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Alterites'][0, :], y=st.session_state['ref_curves']
-              ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesFins'][0, :], y=st.session_state['ref_curves']
-              ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesGrossiers'][0, :], y=st.session_state['ref_curves']
-              ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
+    with st.expander("List of reference curves :"):
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
+                    ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesClassiques'][0, :], y=st.session_state['ref_curves']
+                    ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Alterites'][0, :], y=st.session_state['ref_curves']
+                    ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesFins'][0, :], y=st.session_state['ref_curves']
+                    ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesGrossiers'][0, :], y=st.session_state['ref_curves']
+                    ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
 
-fig.update_xaxes(type="log",tickformat=".1e")
-fig.update_layout(
-    # Ajuster la hauteur de la figure en fonction du nombre de plots
-    height=500
-)
-st.plotly_chart(fig)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
+                    ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
+        fig.update_xaxes(type="log", tickformat=".1e", dtick=1)
+        fig.update_layout(
+            height=500,
+            showlegend=True,
+            xaxis_title=" grain diametere (micrometers, log-scale)"
+        )
+        st.plotly_chart(fig)
 
-st.markdown(
-    "For the peak located between 20 and 50 $\\mu m$ we can choose between 3 different reference curves :")
-st.markdown(" - Limons Grossier")
-st.markdown(" - Limons Grossier-Loess")
-st.markdown(" - Limons Loess")
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesClassiques'][0, :], y=st.session_state['ref_curves']
+                    ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Alterites'][0, :], y=st.session_state['ref_curves']
+                    ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesFins'][0, :], y=st.session_state['ref_curves']
+                    ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesGrossiers'][0, :], y=st.session_state['ref_curves']
+                    ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
 
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_LimonsGrossiers'][0, :], y=st.session_state['ref_curves']
-              ['ref_LimonsGrossiers'][1, :], mode='lines', name='Limons Grossiers'))
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_LimonsGrossiersLoess'][0, :], y=st.session_state['ref_curves']
-              ['ref_LimonsGrossiersLoess'][1, :], mode='lines', name='Limons Grossiers-Loess'))
-fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Loess'][0, :], y=st.session_state['ref_curves']
-              ['ref_Loess'][1, :], mode='lines', name='Loess'))
+        fig.update_xaxes(type="log", tickformat=".1e")
+        fig.update_layout(
+            # Ajuster la hauteur de la figure en fonction du nombre de plots
+            height=500,
+            xaxis_title=" grain diametere (micrometers, log-scale)"
+        )
+        st.plotly_chart(fig)
 
-fig.update_xaxes(type="log",tickformat=".1e",dtick=1)
-fig.update_layout(
-    # Ajuster la hauteur de la figure en fonction du nombre de plots
-    height=500
-)
-st.plotly_chart(fig)
-# endregion
+        st.markdown(
+            "For the peak located between 20 and 50 $\\mu m$ we can choose between 3 different reference curves :")
+        st.markdown(" - Limons Grossier")
+        st.markdown(" - Limons Grossier-Loess")
+        st.markdown(" - Limons Loess")
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_LimonsGrossiers'][0, :], y=st.session_state['ref_curves']
+                    ['ref_LimonsGrossiers'][1, :], mode='lines', name='Limons Grossiers'))
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_LimonsGrossiersLoess'][0, :], y=st.session_state['ref_curves']
+                    ['ref_LimonsGrossiersLoess'][1, :], mode='lines', name='Limons Grossiers-Loess'))
+        fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Loess'][0, :], y=st.session_state['ref_curves']
+                    ['ref_Loess'][1, :], mode='lines', name='Loess'))
+
+        fig.update_xaxes(type="log", tickformat=".1e", dtick=1)
+        fig.update_layout(
+            # Ajuster la hauteur de la figure en fonction du nombre de plots
+            height=500,
+            xaxis_title=" grain diametere (micrometers, log-scale)"
+        )
+        st.plotly_chart(fig)
+
+    st.subheader("Algorithm to perform an approximation of X from the reference curves")
+
 
 with tab_result:
     st.header("Display observations to compare them")
