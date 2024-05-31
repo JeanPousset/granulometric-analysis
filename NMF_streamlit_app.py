@@ -41,6 +41,8 @@ if 'selected_label' not in st.session_state :
     st.session_state['selected_label'] = []
 if 'A_df' not in st.session_state :
     st.session_state['A_df'] = pd.DataFrame(np.zeros((st.session_state['granulometrics'].to_numpy().shape[0],nb_end_members)))
+if 'X-X_hat' not in st.session_state :
+    st.session_state['X-X_hat'] = st.session_state['granulometrics']
 
 
 
@@ -97,8 +99,6 @@ with tab_basic:
 
     if st.button("Lunch basic factorization") :
 
-        
-
         X = st.session_state['granulometrics'].to_numpy()
         model = NMF(n_components=nb_end_members, 
                     solver=st.session_state['solver'],
@@ -111,6 +111,9 @@ with tab_basic:
                     # Increase max_iter to get convergence
         A = model.fit_transform(X)
         M = model.components_
+        X_hat = pd.DataFrame(A @ M,columns=st.session_state['granulometrics'].columns,index=st.session_state['granulometrics'].index) # Estimations of our observations with only 8 EM 
+        X_hat.index = X_hat.index.map(lambda x: f"^{x}") # adding "^-" before
+        st.session_state['X-X_hat']=pd.concat([st.session_state['granulometrics'],X_hat],axis=0)
 
         st.success("NMF succeed")
 
@@ -156,22 +159,7 @@ with tab_basic:
                 showlegend=False  # Masquer la légende pour simplifier l'affichage
             )
                 
-            st.plotly_chart(fig)
-
-                
-
-
-
-
-
-
-    
-
-
-
-
-
-       
+            st.plotly_chart(fig)       
 
 
 with tab_robust:
@@ -194,6 +182,10 @@ with tab_robust:
                                         sum_to_one=0,
                                         tol=1e-7,
                                         max_iter=200)
+        
+        X_hat = pd.DataFrame(A @ M,columns=st.session_state['granulometrics'].columns,index=st.session_state['granulometrics'].index) # Estimations of our observations with only 8 EM 
+        X_hat.index = X_hat.index.map(lambda x: f"^{x}") # adding "^-" before
+        st.session_state['X-X_hat']=pd.concat([st.session_state['granulometrics'],X_hat],axis=0)
 
         st.success("Robust NMF succeed")
 
@@ -244,21 +236,22 @@ with tab_robust:
 with observations :
     st.header("Display observations to compare them")
 
-    labels = st.session_state['granulometrics'].index
+    labels_obs = st.session_state['granulometrics'].index
+    labels_approx = st.session_state['X-X_hat'].index[st.session_state['X-X_hat'].index.str.startswith("^")]
     #search_label = st.text_input("Enter a sample label")
     #filtered_options = [label for label in labels if search_label.lower() in label.lower()]
-    st.session_state['selected_label'] = st.multiselect("label of the observation to diplay", options=labels)
+    st.session_state['selected_obs_labels'] = st.multiselect("labels of the observations to diplay", options=labels_obs)
+    st.session_state['selected_approx_labels'] = st.multiselect("labels of the approximations to diplay", options=labels_approx)
 
 
     st.subheader("Proportions of EM for each observations")
-    st.table(st.session_state['A_df'].loc[st.session_state['selected_label']])
+    st.table(st.session_state['A_df'].loc[st.session_state['selected_obs_labels']])
 
     if st.button('Plots curves'):
         fig, ax = plt.subplots()
-        
 
-        for label in st.session_state['selected_label']:
-            ax.semilogx(st.session_state['granulometrics'].columns,st.session_state['granulometrics'].loc[label], label=label)
+        for label in st.session_state['selected_obs_labels']+st.session_state['selected_approx_labels']:
+            ax.semilogx(st.session_state['X-X_hat'].columns,st.session_state['X-X_hat'].loc[label], label=label)
 
         ax.set_xlabel('micrometers')
         ax.set_title('granulometrics curves of selected observations')
