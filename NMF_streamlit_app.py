@@ -86,11 +86,7 @@ with tab_basic:
             "penalization coef A": st.column_config.NumberColumn(format="%f")
             }
         )
-        # parameters recovery
-        st.session_state['ratio_l1'] = param_choosen.loc[0,'l1-l2 ratio']
-        st.session_state['a_W'] = param_choosen.loc[0,'penalization coef M']
-        st.session_state['a_H'] = param_choosen.loc[0,'penalization coef A']
-
+        
 
 
 
@@ -98,6 +94,11 @@ with tab_basic:
     st.header("Algorithm")
 
     if st.button("Lunch basic factorization") :
+
+        # parameters recovery
+        st.session_state['ratio_l1'] = param_choosen.loc[0,'l1-l2 ratio']
+        st.session_state['a_W'] = param_choosen.loc[0,'penalization coef M']
+        st.session_state['a_H'] = param_choosen.loc[0,'penalization coef A']
 
         X = st.session_state['granulometrics'].to_numpy()
         model = NMF(n_components=nb_end_members, 
@@ -111,11 +112,25 @@ with tab_basic:
                     # Increase max_iter to get convergence
         A = model.fit_transform(X)
         M = model.components_
+
+        # df for the approximation
         X_hat = pd.DataFrame(A @ M,columns=st.session_state['granulometrics'].columns,index=st.session_state['granulometrics'].index) # Estimations of our observations with only 8 EM 
+
+        # Approximation error calculation with sum of euclidean norm of Xi-Xi_hat
+        err_approx = np.sum(np.linalg.norm(X_hat-st.session_state['granulometrics'], axis=1))
+
+        # adding approximation to our result df
         X_hat.index = X_hat.index.map(lambda x: f"^{x}") # adding "^-" before
         st.session_state['X-X_hat']=pd.concat([st.session_state['granulometrics'],X_hat],axis=0)
 
         st.success("NMF succeed")
+
+        # Displaying approx error
+        col1,col2 = st.columns(2)
+        with col2 :
+            st.latex(r''' \sum_{i=1}^{853} \Vert x_i-\hat{x_i} \Vert_2 ''')
+        with col1 :
+            st.metric("Approximation error",err_approx,label_visibility="visible")
 
         st.header("Visualisaiton")
 
@@ -238,13 +253,16 @@ with observations :
 
     labels_obs = st.session_state['granulometrics'].index
     labels_approx = st.session_state['X-X_hat'].index[st.session_state['X-X_hat'].index.str.startswith("^")]
-    #search_label = st.text_input("Enter a sample label")
-    #filtered_options = [label for label in labels if search_label.lower() in label.lower()]
-    st.session_state['selected_obs_labels'] = st.multiselect("labels of the observations to diplay", options=labels_obs)
-    st.session_state['selected_approx_labels'] = st.multiselect("labels of the approximations to diplay", options=labels_approx)
+    
+    # Selection of curves to plot
+    col1,col2 = st.columns(2)
+    with col1:
+        st.session_state['selected_obs_labels'] = st.multiselect("labels of the observations to diplay", options=labels_obs)
+    with col2:
+        st.session_state['selected_approx_labels'] = st.multiselect("labels of the approximations to diplay", options=labels_approx)
 
 
-    st.subheader("Proportions of EM for each observations")
+    st.subheader("Proportions of EM for selected observations")
     st.table(st.session_state['A_df'].loc[st.session_state['selected_obs_labels']])
 
     if st.button('Plots curves'):
