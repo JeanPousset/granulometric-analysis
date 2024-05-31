@@ -17,7 +17,7 @@ st.title('Comparaison of differents NMF')
 nb_end_members = 8  # to choose ?
 
 
-# Loading data :
+# Loading observation data :
 if 'granulometrics' not in st.session_state:
     data = pd.read_excel("data_granulometry.xls",
                          sheet_name=0, header=0, index_col=2)
@@ -28,7 +28,7 @@ if 'granulometrics' not in st.session_state:
     data.div(np.log10([float(col) for col in data.columns]), axis=1)
     st.session_state['granulometrics'] = data
 
-# initialisation
+# region initialisation of session variables
 if 'a_W' not in st.session_state:
     st.session_state['a_W'] = 0.0
 if 'a_H' not in st.session_state:
@@ -46,7 +46,27 @@ if 'A_df' not in st.session_state:
         (st.session_state['granulometrics'].to_numpy().shape[0], nb_end_members)))
 if 'X-X_hat' not in st.session_state:
     st.session_state['X-X_hat'] = st.session_state['granulometrics']
+# endregion
 
+# Loading reference curves
+if 'ref_curves' not in st.session_state:
+    st.session_state['ref_curves'] = {}  # empty initialization
+    st.session_state['ref_curves']['ref_Alterites'] = np.genfromtxt(
+        "ref_curves/ref_Alterites.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_ArgilesFines'] = np.genfromtxt(
+        "ref_curves/ref_ArgilesFines.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_ArgilesClassiques'] = np.genfromtxt(
+        "ref_curves/ref_ArgilesClassiques.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_LimonsGrossiers'] = np.genfromtxt(
+        "ref_curves/ref_LimonsGrossiers.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_LimonsGrossiersLoess'] = np.genfromtxt(
+        "ref_curves/ref_LimonsGrossiersLoess.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_Loess'] = np.genfromtxt(
+        "ref_curves/ref_Loess.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_SablesFins'] = np.genfromtxt(
+        "ref_curves/ref_SablesFins.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_SablesGrossiers'] = np.genfromtxt(
+        "ref_curves/ref_SablesGrossiers.csv", delimiter=',')
 
 tab_basic, tab_robust, tab_ref_expert, tab_result = st.tabs(
     ['basic NMF (with penalization)', 'Robust NMF', 'Experimental references', 'Results'])
@@ -280,6 +300,73 @@ with tab_ref_expert:
                 pure by experts. We're going to use these curves to compare them with the end-members
                 we find and also to build differents approximations. """)
 
+st.subheader("List of reference curves")
+st.markdown("""There are 8 differents reference curves that are mainly characterised by the location 
+            of the peak on the x axis (diametre in $\\mu m$). You can see them bellow. You can see 
+            their plots below.""")
+
+# region plot ref curves
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
+              ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesClassiques'][0, :], y=st.session_state['ref_curves']
+              ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Alterites'][0, :], y=st.session_state['ref_curves']
+              ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesFins'][0, :], y=st.session_state['ref_curves']
+              ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesGrossiers'][0, :], y=st.session_state['ref_curves']
+              ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
+              ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
+fig.update_xaxes(type="log",tickformat=".1e",dtick=1)
+fig.update_layout(
+    height=500,
+    showlegend=True
+)
+st.plotly_chart(fig)
+
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesClassiques'][0, :], y=st.session_state['ref_curves']
+              ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Alterites'][0, :], y=st.session_state['ref_curves']
+              ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesFins'][0, :], y=st.session_state['ref_curves']
+              ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesGrossiers'][0, :], y=st.session_state['ref_curves']
+              ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
+
+fig.update_xaxes(type="log",tickformat=".1e")
+fig.update_layout(
+    # Ajuster la hauteur de la figure en fonction du nombre de plots
+    height=500
+)
+st.plotly_chart(fig)
+
+st.markdown(
+    "For the peak located between 20 and 50 $\\mu m$ we can choose between 3 different reference curves :")
+st.markdown(" - Limons Grossier")
+st.markdown(" - Limons Grossier-Loess")
+st.markdown(" - Limons Loess")
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_LimonsGrossiers'][0, :], y=st.session_state['ref_curves']
+              ['ref_LimonsGrossiers'][1, :], mode='lines', name='Limons Grossiers'))
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_LimonsGrossiersLoess'][0, :], y=st.session_state['ref_curves']
+              ['ref_LimonsGrossiersLoess'][1, :], mode='lines', name='Limons Grossiers-Loess'))
+fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Loess'][0, :], y=st.session_state['ref_curves']
+              ['ref_Loess'][1, :], mode='lines', name='Loess'))
+
+fig.update_xaxes(type="log",tickformat=".1e",dtick=1)
+fig.update_layout(
+    # Ajuster la hauteur de la figure en fonction du nombre de plots
+    height=500
+)
+st.plotly_chart(fig)
+# endregion
 
 with tab_result:
     st.header("Display observations to compare them")
