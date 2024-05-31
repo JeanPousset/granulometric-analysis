@@ -68,13 +68,13 @@ if 'ref_curves' not in st.session_state:
     st.session_state['ref_curves']['ref_SablesGrossiers'] = np.genfromtxt(
         "ref_curves/ref_SablesGrossiers.csv", delimiter=',')
 
-tab_basic, tab_robust, tab_ref_expert, tab_result = st.tabs(
+tab_ref_expert, tab_basic, tab_robust,  tab_result = st.tabs(
     ['basic NMF (with penalization)', 'Robust NMF', 'Experimental references', 'Results'])
 
 with tab_basic:
 
     st.header("Basic NMF")
-    st.markdown(""" Perform the following factorisation :  $$ X \\thickapprox MA + \\varepsilon $$ 
+    st.markdown(""" Perform the following factorisation :  $$ X \\thickapprox AM + \\varepsilon $$ 
                 by minimising the following expression as a function of $M$ and $A$
                 """)
     st.latex(r'''
@@ -309,6 +309,8 @@ with tab_ref_expert:
 
 
     with st.expander("List of reference curves :"):
+        
+        st.markdown("We plot first the reference curve of the Argiles Fines (fine clay) because its peak is much greater than the others")
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
                     ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
@@ -373,6 +375,15 @@ with tab_ref_expert:
         st.plotly_chart(fig)
 
     st.subheader("Algorithm to perform an approximation of X from the reference curves")
+    st.markdown("""We're now going to find the best combinaisons of our reference curves to approximate 
+                our observation X.""")
+    st.markdown("- $M_{ref}$ is the matrix that contains the 8 reference curves.")
+    st.markdown("- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation.")
+    st.markdown("So we have the following problem :")
+    st.latex(r''' A_{ref} = \arg \min_A \Vert X-AM_{ref} \Vert_2^2 ''')
+    
+    
+    
 
 
 with tab_result:
