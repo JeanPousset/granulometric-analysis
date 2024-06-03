@@ -19,7 +19,7 @@ nb_end_members = 8  # to choose ?
 
 # Loading observation data :
 if 'granulometrics' not in st.session_state:
-    data = pd.read_excel("data_granulometry.xls",
+    data = pd.read_excel("data_granulometry_03_06_24.xls",
                          sheet_name=0, header=0, index_col=2)
     # Deletion of additional information
     data = data.drop(columns=['Dept', 'Commune', 'Type'])
@@ -28,7 +28,10 @@ if 'granulometrics' not in st.session_state:
     data.div(np.log10([float(col) for col in data.columns]), axis=1)
     st.session_state['granulometrics'] = data
 
+
 # region initialisation of session variables
+if 'X-X_hat-X_ref' not in st.session_state:
+    st.session_state['X-X_hat-X_ref'] = st.session_state['granulometrics']
 if 'a_W' not in st.session_state:
     st.session_state['a_W'] = 0.0
 if 'a_H' not in st.session_state:
@@ -44,8 +47,8 @@ if 'selected_label' not in st.session_state:
 if 'A_df' not in st.session_state:
     st.session_state['A_df'] = pd.DataFrame(np.zeros(
         (st.session_state['granulometrics'].to_numpy().shape[0], nb_end_members)))
-if 'X-X_hat' not in st.session_state:
-    st.session_state['X-X_hat'] = st.session_state['granulometrics']
+if 'X-X_hat-X_ref' not in st.session_state:
+    st.session_state['X-X_hat-X_ref'] = st.session_state['granulometrics']
 # endregion
 
 # Loading reference curves
@@ -68,7 +71,7 @@ if 'ref_curves' not in st.session_state:
     st.session_state['ref_curves']['ref_SablesGrossiers'] = np.genfromtxt(
         "ref_curves/ref_SablesGrossiers.csv", delimiter=',')
 
-tab_ref_expert, tab_basic, tab_robust,  tab_result = st.tabs(
+tab_basic, tab_robust, tab_ref_expert, tab_result = st.tabs(
     ['basic NMF (with penalization)', 'Robust NMF', 'Experimental references', 'Results'])
 
 with tab_basic:
@@ -144,8 +147,8 @@ with tab_basic:
 
         # adding approximation to our result df
         X_hat.index = X_hat.index.map(lambda x: f"^{x}")  # adding "^-" before
-        st.session_state['X-X_hat'] = pd.concat(
-            [st.session_state['granulometrics'], X_hat], axis=0)
+        st.session_state['X-X_hat-X_ref'] = pd.concat(
+            [st.session_state['X-X_hat-X_ref'], X_hat], axis=0)
 
         st.success("NMF succeed")
 
@@ -236,7 +239,7 @@ with tab_robust:
         X_hat = pd.DataFrame(
             A @ M, columns=st.session_state['granulometrics'].columns, index=st.session_state['granulometrics'].index)
         X_hat.index = X_hat.index.map(lambda x: f"^{x}")  # adding "^-" before
-        st.session_state['X-X_hat'] = pd.concat(
+        st.session_state['X-X_hat-X_ref'] = pd.concat(
             [st.session_state['granulometrics'], X_hat], axis=0)
 
         st.success("Robust NMF succeed")
@@ -304,28 +307,29 @@ with tab_ref_expert:
                 of the peak on the x axis (diametre in $\\mu m$). You can see their plots below. You can also
                 get more information on how these curves were obtainend by downloading the rapport with the 
                 following button. """)
-    with open('bibliography/2023-05-31_rapport_analyse_terre_crue.pdf','rb') as f:
-        st.download_button('Download report', f, file_name = '2023-05-31_rapport_analyse_terre_crue.pdf')
-
+    with open('bibliography/2023-05-31_rapport_analyse_terre_crue.pdf', 'rb') as f:
+        st.download_button(
+            'Download report', f, file_name='2023-05-31_rapport_analyse_terre_crue.pdf')
 
     with st.expander("List of reference curves :"):
-        
-        st.markdown("We plot first the reference curve of the Argiles Fines (fine clay) because its peak is much greater than the others")
+
+        st.markdown(
+            "We plot first the reference curve of the Argiles Fines (fine clay) because its peak is much greater than the others")
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
-                    ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
+                                 ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesClassiques'][0, :], y=st.session_state['ref_curves']
-                    ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
+                                 ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Alterites'][0, :], y=st.session_state['ref_curves']
-                    ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
+                                 ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesFins'][0, :], y=st.session_state['ref_curves']
-                    ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
+                                 ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesGrossiers'][0, :], y=st.session_state['ref_curves']
-                    ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
+                                 ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
 
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
-                    ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
+                                 ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
         fig.update_xaxes(type="log", tickformat=".1e", dtick=1)
         fig.update_layout(
             height=500,
@@ -336,13 +340,13 @@ with tab_ref_expert:
 
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesClassiques'][0, :], y=st.session_state['ref_curves']
-                    ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
+                                 ['ref_ArgilesClassiques'][1, :], mode='lines', name='Argiles Grossières (1-7 microns)'))
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Alterites'][0, :], y=st.session_state['ref_curves']
-                    ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
+                                 ['ref_Alterites'][1, :], mode='lines', name='Alterites (7-20 microns)'))
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesFins'][0, :], y=st.session_state['ref_curves']
-                    ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
+                                 ['ref_SablesFins'][1, :], mode='lines', name='Sables Fins (50-100 microns)'))
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesGrossiers'][0, :], y=st.session_state['ref_curves']
-                    ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
+                                 ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
 
         fig.update_xaxes(type="log", tickformat=".1e")
         fig.update_layout(
@@ -360,11 +364,11 @@ with tab_ref_expert:
 
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_LimonsGrossiers'][0, :], y=st.session_state['ref_curves']
-                    ['ref_LimonsGrossiers'][1, :], mode='lines', name='Limons Grossiers'))
+                                 ['ref_LimonsGrossiers'][1, :], mode='lines', name='Limons Grossiers'))
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_LimonsGrossiersLoess'][0, :], y=st.session_state['ref_curves']
-                    ['ref_LimonsGrossiersLoess'][1, :], mode='lines', name='Limons Grossiers-Loess'))
+                                 ['ref_LimonsGrossiersLoess'][1, :], mode='lines', name='Limons Grossiers-Loess'))
         fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Loess'][0, :], y=st.session_state['ref_curves']
-                    ['ref_Loess'][1, :], mode='lines', name='Loess'))
+                                 ['ref_Loess'][1, :], mode='lines', name='Loess'))
 
         fig.update_xaxes(type="log", tickformat=".1e", dtick=1)
         fig.update_layout(
@@ -374,24 +378,58 @@ with tab_ref_expert:
         )
         st.plotly_chart(fig)
 
-    st.subheader("Algorithm to perform an approximation of X from the reference curves")
+    st.subheader(
+        "Algorithm to perform an approximation of X from the reference curves")
     st.markdown("""We're now going to find the best combinaisons of our reference curves to approximate 
                 our observation X.""")
-    st.markdown("- $M_{ref}$ is the matrix that contains the 8 reference curves.")
-    st.markdown("- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation.")
+    st.markdown(
+        "- $M_{ref}$ is the matrix that contains the 8 reference curves.")
+    st.markdown(
+        "- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation.")
     st.markdown("So we have the following problem :")
-    st.latex(r''' A_{ref} = \arg \min_A \Vert X-AM_{ref} \Vert_2^2 ''')
-    
-    
-    
+    st.latex(r''' A_{ref} = \arg \min_A \Vert X-AM_{ref} \Vert_F^2 ''')
 
+    if st.button('Perform estimations with reference curves'):
+
+        # Gathering y from every reference curve into our M_ref matrix
+        M_ref = np.zeros(
+            (len(st.session_state['ref_curves']), st.session_state['ref_curves']['ref_ArgilesClassiques'].shape[1]))
+        for i, ref_curve in enumerate(st.session_state['ref_curves']):
+            M_ref[int(i), :] = st.session_state['ref_curves'][ref_curve][1, :]
+
+        # A_ref is the mimimal argument of the optimisation problem
+        X = st.session_state['granulometrics'].to_numpy()
+        A_ref = X @ M_ref.T @ np.linalg.inv(M_ref @ M_ref.T)
+
+        # X_ref the approximations of our observations with ref_curves
+        X_ref = pd.DataFrame(
+            A_ref @ M_ref, columns=st.session_state['granulometrics'].columns, index=st.session_state['granulometrics'].index)
+
+        # Approximation error calculation with sum of euclidean norm of Xi-Xi_hat
+        err_approx = np.sum(np.linalg.norm(
+            X_ref-st.session_state['granulometrics'], axis=1))
+        X_ref.index = X_ref.index.map(lambda x: f"r{x}")  # adding "r" before
+        st.session_state['X-X_hat-X_ref'] = pd.concat(
+            [st.session_state['X-X_hat-X_ref'], X_ref], axis=0)
+        
+        st.success("Approximation succeed")
+        # Displaying approx error
+        col1, col2 = st.columns(2)
+        with col2:
+            st.latex(r''' \sum_{i=1}^{853} \Vert x_i-{x_{ref,i}} \Vert_2 ''')
+        with col1:
+            st.metric("Approximation error", err_approx,
+                      label_visibility="visible")
+        
+        
 
 with tab_result:
     st.header("Display observations to compare them")
+    st.markdown("##### Please perform approximation before trying to plot curves of approximations")
 
     labels_obs = st.session_state['granulometrics'].index
-    labels_approx = st.session_state['X-X_hat'].index[st.session_state['X-X_hat'].index.str.startswith(
-        "^")]
+    labels_approx = st.session_state['X-X_hat-X_ref'].index[st.session_state['X-X_hat-X_ref'].index.str.startswith((
+        '^','r'))]
 
     # Selection of curves to plot
     col1, col2 = st.columns(2)
@@ -410,8 +448,8 @@ with tab_result:
         fig, ax = plt.subplots()
 
         for label in st.session_state['selected_obs_labels']+st.session_state['selected_approx_labels']:
-            ax.semilogx(st.session_state['X-X_hat'].columns,
-                        st.session_state['X-X_hat'].loc[label], label=label)
+            ax.semilogx(st.session_state['X-X_hat-X_ref'].columns,
+                        st.session_state['X-X_hat-X_ref'].loc[label], label=label)
 
         ax.set_xlabel('micrometers')
         ax.set_title('granulometrics curves of selected observations')
