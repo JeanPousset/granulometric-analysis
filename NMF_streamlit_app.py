@@ -17,21 +17,27 @@ st.title('Comparaison of differents NMF')
 nb_end_members = 8  # to choose ?
 
 
+# data_granulometry_03_06_24
 # Loading observation data :
 if 'granulometrics' not in st.session_state:
-    data = pd.read_excel("data_granulometry_03_06_24.xls",
+    data = pd.read_excel("ancien.xls",
                          sheet_name=0, header=0, index_col=2)
     # Deletion of additional information
     data = data.drop(columns=['Dept', 'Commune', 'Type'])
     data = data.diff(axis=1)  # Cumulative difference on line item
+    # Dividing by the log division of mesurement steps
+    data.loc[:, data.columns != 0.03] = data.loc[:, data.columns != 0.03].div(np.log10(np.array(
+        [float(col) for col in data.columns])[1:]/np.array([float(col) for col in data.columns])[:-1]), axis=1)
     data[[0.03]] = 0
-    data.div(np.log10([float(col) for col in data.columns]), axis=1)
+    data = data.div(data.sum(axis=1), axis=0)*100  # Norming curves
     st.session_state['granulometrics'] = data
 
 
 # region initialisation of session variables
 if 'X-X_hat-X_ref' not in st.session_state:
     st.session_state['X-X_hat-X_ref'] = st.session_state['granulometrics']
+if 'nmf_flag' not in st.session_state:
+    st.session_state['nmf_flag'] = False
 if 'a_W' not in st.session_state:
     st.session_state['a_W'] = 0.0
 if 'a_H' not in st.session_state:
@@ -161,6 +167,7 @@ with tab_basic:
                       label_visibility="visible")
 
         st.header("Visualization")
+        st.session_state['nmf_flag'] = True  # They are now result
 
         with st.expander("End-Members"):
             fig_em, axs_em = plt.subplots(
@@ -243,6 +250,8 @@ with tab_robust:
             [st.session_state['granulometrics'], X_hat], axis=0)
 
         st.success("Robust NMF succeed")
+
+        st.session_state['nmf_flag'] = True  # They are now result
 
         st.header("Visualisaiton")
 
@@ -411,7 +420,7 @@ with tab_ref_expert:
         X_ref.index = X_ref.index.map(lambda x: f"r{x}")  # adding "r" before
         st.session_state['X-X_hat-X_ref'] = pd.concat(
             [st.session_state['X-X_hat-X_ref'], X_ref], axis=0)
-        
+
         st.success("Approximation succeed")
         # Displaying approx error
         col1, col2 = st.columns(2)
@@ -420,16 +429,16 @@ with tab_ref_expert:
         with col1:
             st.metric("Approximation error", err_approx,
                       label_visibility="visible")
-        
-        
+
 
 with tab_result:
     st.header("Display observations to compare them")
-    st.markdown("##### Please perform approximation before trying to plot curves of approximations")
+    st.markdown(
+        "##### Please perform approximation before trying to plot curves of approximations")
 
     labels_obs = st.session_state['granulometrics'].index
     labels_approx = st.session_state['X-X_hat-X_ref'].index[st.session_state['X-X_hat-X_ref'].index.str.startswith((
-        '^','r'))]
+        '^', 'r'))]
 
     # Selection of curves to plot
     col1, col2 = st.columns(2)
@@ -440,9 +449,10 @@ with tab_result:
         st.session_state['selected_approx_labels'] = st.multiselect(
             "labels of the approximations to diplay", options=labels_approx)
 
-    st.subheader("Proportions of EM for selected observations")
-    st.table(
-        st.session_state['A_df'].loc[st.session_state['selected_obs_labels']])
+    if st.session_state['nmf_flag']:
+        st.subheader("Proportions of EM for selected observations")
+        st.table(
+            st.session_state['A_df'].loc[st.session_state['selected_obs_labels']])
 
     if st.button('Plots curves'):
         fig, ax = plt.subplots()
