@@ -20,7 +20,7 @@ nb_end_members = 8  # to choose ?
 # data_granulometry_03_06_24
 # Loading observation data :
 if 'granulometrics' not in st.session_state:
-    data = pd.read_excel("ancien.xls",
+    data = pd.read_excel("data_granulometry_03_06_24.xls",
                          sheet_name=0, header=0, index_col=2)
     # Deletion of additional information
     data = data.drop(columns=['Dept', 'Commune', 'Type'])
@@ -77,8 +77,8 @@ if 'ref_curves' not in st.session_state:
     st.session_state['ref_curves']['ref_SablesGrossiers'] = np.genfromtxt(
         "ref_curves/ref_SablesGrossiers.csv", delimiter=',')
 
-tab_basic, tab_robust, tab_ref_expert, tab_result = st.tabs(
-    ['basic NMF (with penalization)', 'Robust NMF', 'Experimental references', 'Results'])
+tab_basic, tab_ref_expert, tab_result = st.tabs(
+    ['basic NMF (with penalization)', 'Experimental references', 'Results'])
 
 with tab_basic:
 
@@ -170,17 +170,25 @@ with tab_basic:
         st.session_state['nmf_flag'] = True  # They are now result
 
         with st.expander("End-Members"):
-            fig_em, axs_em = plt.subplots(
-                nrows=nb_end_members//2, ncols=2, figsize=(10, 2*nb_end_members))
 
-            for i in range(nb_end_members//2):
-                for j in range(2):
-                    axs_em[i, j].semilogx(
-                        st.session_state['granulometrics'].columns, M[2*i+j, :])
-                    axs_em[i, j].set_title(f'End-member {2*i+j+1}')
+            fig = make_subplots(rows=4, cols=2, subplot_titles=[
+                                f"End-Member {i}" for i in range(1, 9)])
+            for i in range(8):
+                row = (i // 2) + 1
+                col = (i % 2) + 1
+                fig.add_trace(
+                    go.Scatter(
+                        x=st.session_state['granulometrics'].columns, y=M[i, :], mode='lines'),
+                    row=row, col=col
+                )
 
-            plt.tight_layout()
-            st.pyplot(fig_em)
+            fig.update_xaxes(type='log', tickformat=".1e",
+                             dtick=1, showgrid=True)
+            fig.update_yaxes(showgrid=True)
+            fig.update_layout(height=1300, width=700,
+                              title_text="End-members curves", showlegend=False)
+
+            st.plotly_chart(fig)
 
         with st.expander("Proportions of EM in our observations"):
             st.session_state['A_df'] = pd.DataFrame(A, index=st.session_state['granulometrics'].index, columns=[
@@ -218,7 +226,7 @@ with tab_basic:
 
             st.plotly_chart(fig)
 
-
+'''
 with tab_robust:
 
     col1_r, col2_r = st.columns(2)
@@ -256,17 +264,23 @@ with tab_robust:
         st.header("Visualisaiton")
 
         with st.expander("End-Members"):
-            fig_em, axs_em = plt.subplots(
-                nrows=nb_end_members//2, ncols=2, figsize=(10, 2*nb_end_members))
+            fig = make_subplots(rows=4, cols=2, subplot_titles=[
+                                f"End-Member {i}" for i in range(1, 9)])
+            for i in range(8):
+                row = (i // 2) + 1
+                col = (i % 2) + 1
+                fig.add_trace(
+                    go.Scatter(
+                        x=st.session_state['granulometrics'].columns, y=M[i, :], mode='lines'),
+                    row=row, col=col
+                )
+                
+            fig.update_xaxes(type='log', tickformat=".1e", dtick=1,showgrid=True)
+            fig.update_yaxes(showgrid=True)
+            fig.update_layout(height=1300, width=700,
+                              title_text="End-members curves", showlegend=False)
 
-            for i in range(nb_end_members//2):
-                for j in range(2):
-                    axs_em[i, j].semilogx(
-                        st.session_state['granulometrics'].columns, M[2*i+j, :])
-                    axs_em[i, j].set_title(f'End-member {2*i+j+1}')
-
-            plt.tight_layout()
-            st.pyplot(fig_em)
+            st.plotly_chart(fig)
 
         with st.expander("Proportions of EM in our observations"):
             st.session_state['A_df'] = pd.DataFrame(A, index=st.session_state['granulometrics'].index, columns=[
@@ -303,6 +317,7 @@ with tab_robust:
             )
 
             st.plotly_chart(fig)
+'''
 
 with tab_ref_expert:
     st.header("Approximation of our observation by reference curves")
@@ -314,7 +329,6 @@ with tab_ref_expert:
     st.subheader("List of reference curves")
     st.markdown(f"""There are 8 differents reference curves that are mainly characterised by the location 
                 of the peak on the x axis (diametre in $\\mu m$). You can see their plots below.""")
-   
 
     with st.expander("List of reference curves :"):
 
@@ -425,7 +439,6 @@ with tab_ref_expert:
         with col1:
             st.metric("Approximation error", err_approx,
                       label_visibility="visible")
-
 
 with tab_result:
     st.header("Display observations to compare them")
