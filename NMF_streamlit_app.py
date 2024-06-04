@@ -226,98 +226,6 @@ with tab_basic:
 
             st.plotly_chart(fig)
 
-'''
-with tab_robust:
-
-    col1_r, col2_r = st.columns(2)
-    with col1_r:
-        st.session_state['lambda_robust'] = st.number_input(
-            "penalization regularization weigth for L-2,1 norm of the residuals R", step=0.000001, value=st.session_state['lambda_robust'])
-    with col2_r:
-        st.session_state['beta_r'] = st.number_input(
-            "beta param for the beta-divergence, 0 : Itakura-Saito, 1 : Kullback-Leibler, 2 : Euclidean", step=0.1, value=st.session_state['beta_r'])
-
-    st.header("Algorithm")
-
-    if st.button("Lunch robust factorization"):
-        X = st.session_state['granulometrics'].to_numpy()
-        A, M, R, obj = robust_nmf(X,
-                                  rank=nb_end_members,
-                                  beta=st.session_state['beta_r'],
-                                  init='random',
-                                  reg_val=st.session_state['lambda_robust'],
-                                  sum_to_one=0,
-                                  tol=1e-7,
-                                  max_iter=200)
-
-        # Estimations of our observations with only 8 EM
-        X_hat = pd.DataFrame(
-            A @ M, columns=st.session_state['granulometrics'].columns, index=st.session_state['granulometrics'].index)
-        X_hat.index = X_hat.index.map(lambda x: f"^{x}")  # adding "^-" before
-        st.session_state['X-X_hat-X_ref'] = pd.concat(
-            [st.session_state['granulometrics'], X_hat], axis=0)
-
-        st.success("Robust NMF succeed")
-
-        st.session_state['nmf_flag'] = True  # They are now result
-
-        st.header("Visualisaiton")
-
-        with st.expander("End-Members"):
-            fig = make_subplots(rows=4, cols=2, subplot_titles=[
-                                f"End-Member {i}" for i in range(1, 9)])
-            for i in range(8):
-                row = (i // 2) + 1
-                col = (i % 2) + 1
-                fig.add_trace(
-                    go.Scatter(
-                        x=st.session_state['granulometrics'].columns, y=M[i, :], mode='lines'),
-                    row=row, col=col
-                )
-                
-            fig.update_xaxes(type='log', tickformat=".1e", dtick=1,showgrid=True)
-            fig.update_yaxes(showgrid=True)
-            fig.update_layout(height=1300, width=700,
-                              title_text="End-members curves", showlegend=False)
-
-            st.plotly_chart(fig)
-
-        with st.expander("Proportions of EM in our observations"):
-            st.session_state['A_df'] = pd.DataFrame(A, index=st.session_state['granulometrics'].index, columns=[
-                                                    f'EM{i}' for i in range(1, nb_end_members+1)])
-            st.session_state['A_df']['label'] = st.session_state['granulometrics'].index
-            fig = make_subplots(rows=nb_end_members//2,
-                                cols=1, vertical_spacing=0.05)
-            for i in range(nb_end_members//2):
-
-                first_em = 2*i+1
-                second_em = 2*(i+1)
-
-                fig.add_trace(
-                    go.Scatter(
-                        x=st.session_state['A_df'][f'EM{first_em}'],
-                        y=st.session_state['A_df'][f'EM{second_em}'],
-                        mode='markers',
-                        marker=dict(size=10, color=st.session_state['A_df']['label'].astype(
-                            'category').cat.codes, colorscale='rainbow'),
-                        text=st.session_state['A_df']['label'],
-                    ),
-                    row=i+1, col=1
-                )
-                fig.update_xaxes(
-                    title_text=f'End-member {first_em}', showgrid=False, gridcolor='LightGray', row=i+1, col=1)
-                fig.update_yaxes(
-                    title_text=f'End-member {second_em}', showgrid=False, gridcolor='LightGray', row=i+1, col=1)
-
-            fig.update_layout(
-                # Ajuster la hauteur de la figure en fonction du nombre de plots
-                height=700 * nb_end_members//2,
-                title_text='Proprotions of End-members',
-                showlegend=False  # Masquer la légende pour simplifier l'affichage
-            )
-
-            st.plotly_chart(fig)
-'''
 
 with tab_ref_expert:
     st.header("Approximation of our observation by reference curves")
@@ -474,3 +382,96 @@ with tab_result:
         ax.set_title('granulometrics curves of selected observations')
         ax.legend()
         st.pyplot(fig)
+
+# region tab_robust
+# with tab_robust:
+
+#     col1_r, col2_r = st.columns(2)
+#     with col1_r:
+#         st.session_state['lambda_robust'] = st.number_input(
+#             "penalization regularization weigth for L-2,1 norm of the residuals R", step=0.000001, value=st.session_state['lambda_robust'])
+#     with col2_r:
+#         st.session_state['beta_r'] = st.number_input(
+#             "beta param for the beta-divergence, 0 : Itakura-Saito, 1 : Kullback-Leibler, 2 : Euclidean", step=0.1, value=st.session_state['beta_r'])
+
+#     st.header("Algorithm")
+
+#     if st.button("Lunch robust factorization"):
+#         X = st.session_state['granulometrics'].to_numpy()
+#         A, M, R, obj = robust_nmf(X,
+#                                   rank=nb_end_members,
+#                                   beta=st.session_state['beta_r'],
+#                                   init='random',
+#                                   reg_val=st.session_state['lambda_robust'],
+#                                   sum_to_one=0,
+#                                   tol=1e-7,
+#                                   max_iter=200)
+
+#         # Estimations of our observations with only 8 EM
+#         X_hat = pd.DataFrame(
+#             A @ M, columns=st.session_state['granulometrics'].columns, index=st.session_state['granulometrics'].index)
+#         X_hat.index = X_hat.index.map(lambda x: f"^{x}")  # adding "^-" before
+#         st.session_state['X-X_hat-X_ref'] = pd.concat(
+#             [st.session_state['granulometrics'], X_hat], axis=0)
+
+#         st.success("Robust NMF succeed")
+
+#         st.session_state['nmf_flag'] = True  # They are now result
+
+#         st.header("Visualisaiton")
+
+#         with st.expander("End-Members"):
+#             fig = make_subplots(rows=4, cols=2, subplot_titles=[
+#                                 f"End-Member {i}" for i in range(1, 9)])
+#             for i in range(8):
+#                 row = (i // 2) + 1
+#                 col = (i % 2) + 1
+#                 fig.add_trace(
+#                     go.Scatter(
+#                         x=st.session_state['granulometrics'].columns, y=M[i, :], mode='lines'),
+#                     row=row, col=col
+#                 )
+                
+#             fig.update_xaxes(type='log', tickformat=".1e", dtick=1,showgrid=True)
+#             fig.update_yaxes(showgrid=True)
+#             fig.update_layout(height=1300, width=700,
+#                               title_text="End-members curves", showlegend=False)
+
+#             st.plotly_chart(fig)
+
+#         with st.expander("Proportions of EM in our observations"):
+#             st.session_state['A_df'] = pd.DataFrame(A, index=st.session_state['granulometrics'].index, columns=[
+#                                                     f'EM{i}' for i in range(1, nb_end_members+1)])
+#             st.session_state['A_df']['label'] = st.session_state['granulometrics'].index
+#             fig = make_subplots(rows=nb_end_members//2,
+#                                 cols=1, vertical_spacing=0.05)
+#             for i in range(nb_end_members//2):
+
+#                 first_em = 2*i+1
+#                 second_em = 2*(i+1)
+
+#                 fig.add_trace(
+#                     go.Scatter(
+#                         x=st.session_state['A_df'][f'EM{first_em}'],
+#                         y=st.session_state['A_df'][f'EM{second_em}'],
+#                         mode='markers',
+#                         marker=dict(size=10, color=st.session_state['A_df']['label'].astype(
+#                             'category').cat.codes, colorscale='rainbow'),
+#                         text=st.session_state['A_df']['label'],
+#                     ),
+#                     row=i+1, col=1
+#                 )
+#                 fig.update_xaxes(
+#                     title_text=f'End-member {first_em}', showgrid=False, gridcolor='LightGray', row=i+1, col=1)
+#                 fig.update_yaxes(
+#                     title_text=f'End-member {second_em}', showgrid=False, gridcolor='LightGray', row=i+1, col=1)
+
+#             fig.update_layout(
+#                 # Ajuster la hauteur de la figure en fonction du nombre de plots
+#                 height=700 * nb_end_members//2,
+#                 title_text='Proprotions of End-members',
+#                 showlegend=False  # Masquer la légende pour simplifier l'affichage
+#             )
+
+#             st.plotly_chart(fig)
+# endregion
