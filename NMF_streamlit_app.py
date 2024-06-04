@@ -160,7 +160,7 @@ with tab_basic:
             st.metric("Approximation error", err_approx,
                       label_visibility="visible")
 
-        st.header("Visualisaiton")
+        st.header("Visualization")
 
         with st.expander("End-Members"):
             fig_em, axs_em = plt.subplots(
