@@ -313,12 +313,8 @@ with tab_ref_expert:
 
     st.subheader("List of reference curves")
     st.markdown(f"""There are 8 differents reference curves that are mainly characterised by the location 
-                of the peak on the x axis (diametre in $\\mu m$). You can see their plots below. You can also
-                get more information on how these curves were obtainend by downloading the rapport with the 
-                following button. """)
-    with open('bibliography/2023-05-31_rapport_analyse_terre_crue.pdf', 'rb') as f:
-        st.download_button(
-            'Download report', f, file_name='2023-05-31_rapport_analyse_terre_crue.pdf')
+                of the peak on the x axis (diametre in $\\mu m$). You can see their plots below.""")
+   
 
     with st.expander("List of reference curves :"):
 
