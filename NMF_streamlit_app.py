@@ -1,10 +1,10 @@
-from backends.numpy_functions import robust_nmf
 import numpy as np
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 from sklearn.decomposition import NMF
 import plotly.graph_objects as go
+# from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm
 from plotly.subplots import make_subplots
 import sys
 sys.path.append("..")
@@ -32,10 +32,11 @@ if 'granulometrics' not in st.session_state:
     data = data.div(data.sum(axis=1), axis=0)*100  # Norming curves
     st.session_state['granulometrics'] = data
 
-
 # region initialisation of session variables
 if 'X-X_hat-X_ref' not in st.session_state:
     st.session_state['X-X_hat-X_ref'] = st.session_state['granulometrics']
+if 'rc_flag' not in st.session_state:
+    st.session_state['rc_flag'] = False
 if 'nmf_flag' not in st.session_state:
     st.session_state['nmf_flag'] = False
 if 'a_W' not in st.session_state:
@@ -153,8 +154,16 @@ with tab_basic:
 
         # adding approximation to our result df
         X_hat.index = X_hat.index.map(lambda x: f"^{x}")  # adding "^-" before
-        st.session_state['X-X_hat-X_ref'] = pd.concat(
-            [st.session_state['X-X_hat-X_ref'], X_hat], axis=0)
+
+        if st.session_state['nmf_flag']:    # in this case we replace the old nmf approximation
+            for ind in X_hat.index:
+                st.session_state['X-X_hat-X_ref'].loc[ind] = X_hat.loc[ind]
+
+        else :  # easier case : there isn't already a nmf approximation
+            st.session_state['X-X_hat-X_ref'] = pd.concat(
+                [st.session_state['X-X_hat-X_ref'], X_hat], axis=0)
+            st.session_state['nmf_flag'] = True  # They are now result
+
 
         st.success("NMF succeed")
 
@@ -167,7 +176,6 @@ with tab_basic:
                       label_visibility="visible")
 
         st.header("Visualization")
-        st.session_state['nmf_flag'] = True  # They are now result
 
         with st.expander("End-Members"):
 
@@ -305,6 +313,12 @@ with tab_ref_expert:
         )
         st.plotly_chart(fig)
 
+    st.subheader("Choice of the reference curve for the peak between 20 and 50 microns")
+    st.markdown("""As explainend in the list of reference curves we can choose between three reference curves 
+                (Limons grossier, Limon grossier-loess, Loess) for the peak between 20 and 50 $\\mu m$. Please 
+                select bellow which reference curve to use in approximation.""")
+    st.session_state['ref_20_50'] = st.radio("",['Limons Grossiers','Limons Grossiers-Loess','Loess'])
+
     st.subheader(
         "Algorithm to perform an approximation of X from the reference curves")
     st.markdown("""We're now going to find the best combinaisons of our reference curves to approximate 
@@ -318,11 +332,24 @@ with tab_ref_expert:
 
     if st.button('Perform estimations with reference curves'):
 
+        # Deleting other 20-50 microns that have not been selected
+        st.session_state['ref_curves_selected'] = st.session_state['ref_curves'].copy()
+        if st.session_state['ref_20_50'] == 'Limons Grossiers':
+            del st.session_state['ref_curves_selected']["ref_LimonsGrossiersLoess"]
+            del st.session_state['ref_curves_selected']["ref_Loess"]
+        elif st.session_state['ref_20_50'] == 'Limons Grossiers-Loess':
+            del st.session_state['ref_curves_selected']["ref_LimonsGrossiers"]
+            del st.session_state['ref_curves_selected']["ref_Loess"]
+        else :
+            del st.session_state['ref_curves_selected']["ref_LimonsGrossiersLoess"]
+            del st.session_state['ref_curves_selected']["ref_LimonsGrossiers"]
+
+
         # Gathering y from every reference curve into our M_ref matrix
         M_ref = np.zeros(
-            (len(st.session_state['ref_curves']), st.session_state['ref_curves']['ref_ArgilesClassiques'].shape[1]))
-        for i, ref_curve in enumerate(st.session_state['ref_curves']):
-            M_ref[int(i), :] = st.session_state['ref_curves'][ref_curve][1, :]
+            (len(st.session_state['ref_curves_selected']), st.session_state['ref_curves_selected']['ref_ArgilesClassiques'].shape[1]))
+        for i, ref_curve in enumerate(st.session_state['ref_curves_selected']):
+            M_ref[int(i), :] = st.session_state['ref_curves_selected'][ref_curve][1, :]
 
         # A_ref is the mimimal argument of the optimisation problem
         X = st.session_state['granulometrics'].to_numpy()
@@ -333,11 +360,19 @@ with tab_ref_expert:
             A_ref @ M_ref, columns=st.session_state['granulometrics'].columns, index=st.session_state['granulometrics'].index)
 
         # Approximation error calculation with sum of euclidean norm of Xi-Xi_hat
-        err_approx = np.sum(np.linalg.norm(
+        err_approx_rc = np.sum(np.linalg.norm(
             X_ref-st.session_state['granulometrics'], axis=1))
         X_ref.index = X_ref.index.map(lambda x: f"r{x}")  # adding "r" before
-        st.session_state['X-X_hat-X_ref'] = pd.concat(
-            [st.session_state['X-X_hat-X_ref'], X_ref], axis=0)
+
+        if st.session_state['rc_flag']:    # in this case we replace the old reference curves approximation
+            for ind in X_ref.index:
+                st.session_state['X-X_hat-X_ref'].loc[ind] = X_ref.loc[ind]
+
+        else :  # easier case : there isn't already a reference curves approximation
+            st.session_state['X-X_hat-X_ref'] = pd.concat(
+                [st.session_state['X-X_hat-X_ref'], X_ref], axis=0)
+            st.session_state['rc_flag'] = True  # They are now result
+        
 
         st.success("Approximation succeed")
         # Displaying approx error
@@ -345,8 +380,8 @@ with tab_ref_expert:
         with col2:
             st.latex(r''' \sum_{i=1}^{853} \Vert x_i-{x_{ref,i}} \Vert_2 ''')
         with col1:
-            st.metric("Approximation error", err_approx,
-                      label_visibility="visible")
+            st.metric("Approximation error", err_approx_rc ,
+                        label_visibility="visible")
 
 with tab_result:
     st.header("Display observations to compare them")
