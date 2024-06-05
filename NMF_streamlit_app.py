@@ -4,6 +4,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from sklearn.decomposition import NMF
 import plotly.graph_objects as go
+import cvxpy as cp # 
 # from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm
 from plotly.subplots import make_subplots
 import sys
@@ -78,6 +79,21 @@ if 'ref_curves' not in st.session_state:
     st.session_state['ref_curves']['ref_SablesGrossiers'] = np.genfromtxt(
         "ref_curves/ref_SablesGrossiers.csv", delimiter=',')
 
+# region Metrics for the approximation qualities
+
+# Integral approximations with trapeze method for every observations
+def trapeze_aeras(X):   
+    abscisses = np.tile(st.session_state['granulometrics'].columns,(st.session_state['granulometrics'].shape[0],1))
+    return 0.5*np.sum((abscisses[:,1:]-abscisses[:,:-1])*(X[:,1:]+X[:,:-1]))  # return the sum of all areas
+
+# Calculate quotient between ||X-X_approx||_L1 et ||X||L1
+def L1_relative(X_approx):
+    numerator = trapeze_aeras(np.abs(X_approx-st.session_state['granulometrics'].to_numpy()))
+    denominator = trapeze_aeras(st.session_state['granulometrics'].to_numpy())
+    return numerator/denominator
+
+# endregion
+
 tab_basic, tab_ref_expert, tab_result = st.tabs(
     ['basic NMF (with penalization)', 'Experimental references', 'Results'])
 
@@ -145,34 +161,40 @@ with tab_basic:
 
         # df for the approximation
         # Estimations of our observations with only 8 EM
-        X_hat = pd.DataFrame(
+        X_nmf = pd.DataFrame(
             A @ M, columns=st.session_state['granulometrics'].columns, index=st.session_state['granulometrics'].index)
 
-        # Approximation error calculation with sum of euclidean norm of Xi-Xi_hat
-        err_approx = np.sum(np.linalg.norm(
-            X_hat-st.session_state['granulometrics'], axis=1))
+        # Approximation errors
+        err2_nmf = np.sum(np.linalg.norm(
+            X_nmf-st.session_state['granulometrics'], axis=1))
+        errL1_nmf = L1_relative(X_nmf.to_numpy())
 
         # adding approximation to our result df
-        X_hat.index = X_hat.index.map(lambda x: f"^{x}")  # adding "^-" before
+        X_nmf.index = X_nmf.index.map(lambda x: f"^{x}")  # adding "^-" before
 
-        if st.session_state['nmf_flag']:    # in this case we replace the old nmf approximation
-            for ind in X_hat.index:
-                st.session_state['X-X_hat-X_ref'].loc[ind] = X_hat.loc[ind]
+        # in this case we replace the old nmf approximation
+        if st.session_state['nmf_flag']:
+            for ind in X_nmf.index:
+                st.session_state['X-X_hat-X_ref'].loc[ind] = X_nmf.loc[ind]
 
-        else :  # easier case : there isn't already a nmf approximation
+        else:  # easier case : there isn't already a nmf approximation
             st.session_state['X-X_hat-X_ref'] = pd.concat(
-                [st.session_state['X-X_hat-X_ref'], X_hat], axis=0)
+                [st.session_state['X-X_hat-X_ref'], X_nmf], axis=0)
             st.session_state['nmf_flag'] = True  # They are now result
 
-
-        st.success("NMF succeed")
-
-        # Displaying approx error
+        st.success("Approximation succeed")
+        # Displaying approx errors
         col1, col2 = st.columns(2)
-        with col2:
-            st.latex(r''' \sum_{i=1}^{853} \Vert x_i-\hat{x_i} \Vert_2 ''')
         with col1:
-            st.metric("Approximation error", err_approx,
+            st.latex(r''' \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 ''')
+        with col2:
+            st.metric("sum of quadratic errors", err2_nmf,
+                      label_visibility="visible")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.latex(r''' \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} ''')
+        with col2:
+            st.metric("sum of L1-relative errors", errL1_nmf,
                       label_visibility="visible")
 
         st.header("Visualization")
@@ -233,7 +255,6 @@ with tab_basic:
             )
 
             st.plotly_chart(fig)
-
 
 with tab_ref_expert:
     st.header("Approximation of our observation by reference curves")
@@ -313,11 +334,13 @@ with tab_ref_expert:
         )
         st.plotly_chart(fig)
 
-    st.subheader("Choice of the reference curve for the peak between 20 and 50 microns")
+    st.subheader(
+        "Choice of the reference curve for the peak between 20 and 50 microns")
     st.markdown("""As explainend in the list of reference curves we can choose between three reference curves 
                 (Limons grossier, Limon grossier-loess, Loess) for the peak between 20 and 50 $\\mu m$. Please 
                 select bellow which reference curve to use in approximation.""")
-    st.session_state['ref_20_50'] = st.radio("",['Limons Grossiers','Limons Grossiers-Loess','Loess'])
+    st.session_state['ref_20_50'] = st.radio(
+        "", ['Limons Grossiers', 'Limons Grossiers-Loess', 'Loess', 'All 3 at the same time'])
 
     st.subheader(
         "Algorithm to perform an approximation of X from the reference curves")
@@ -333,17 +356,18 @@ with tab_ref_expert:
     if st.button('Perform estimations with reference curves'):
 
         # Deleting other 20-50 microns that have not been selected
-        st.session_state['ref_curves_selected'] = st.session_state['ref_curves'].copy()
+        st.session_state['ref_curves_selected'] = st.session_state['ref_curves'].copy(
+        )
         if st.session_state['ref_20_50'] == 'Limons Grossiers':
             del st.session_state['ref_curves_selected']["ref_LimonsGrossiersLoess"]
             del st.session_state['ref_curves_selected']["ref_Loess"]
         elif st.session_state['ref_20_50'] == 'Limons Grossiers-Loess':
             del st.session_state['ref_curves_selected']["ref_LimonsGrossiers"]
             del st.session_state['ref_curves_selected']["ref_Loess"]
-        else :
+        elif st.session_state['ref_20_50'] == 'Limons Grossiers-Loess':
             del st.session_state['ref_curves_selected']["ref_LimonsGrossiersLoess"]
             del st.session_state['ref_curves_selected']["ref_LimonsGrossiers"]
-
+        # Do nothing if all 3 at the same time selected
 
         # Gathering y from every reference curve into our M_ref matrix
         M_ref = np.zeros(
@@ -355,33 +379,49 @@ with tab_ref_expert:
         X = st.session_state['granulometrics'].to_numpy()
         A_ref = X @ M_ref.T @ np.linalg.inv(M_ref @ M_ref.T)
 
+        # Performing minimalization with CVXPY to compare
+        A = cp.Variable((X.shape[0], M_ref.shape[0]))           # Declaration of our minimization variable A
+        constraints = [A >= 0]                                  # Constraint A to be positive
+        objective = cp.Minimize(cp.norm(X - A @ M_ref, 'fro')**2)   # Objective function
+        #problem = cp.Problem(objective)                        # optim without constraint to compare with our direct solution
+        problem = cp.Problem(objective, constraints)            # Definition of our problem
+        problem.solve(solver=cp.SCS, verbose=True, eps=1e-10, max_iters=10000)    # Calling solver
+        A_ref_solv = A.value                                    # We get the result 
+
         # X_ref the approximations of our observations with ref_curves
         X_ref = pd.DataFrame(
-            A_ref @ M_ref, columns=st.session_state['granulometrics'].columns, index=st.session_state['granulometrics'].index)
+            A_ref_solv @ M_ref, columns=st.session_state['granulometrics'].columns, index=st.session_state['granulometrics'].index)
 
         # Approximation error calculation with sum of euclidean norm of Xi-Xi_hat
-        err_approx_rc = np.sum(np.linalg.norm(
+        err2_approx_rc = np.sum(np.linalg.norm(
             X_ref-st.session_state['granulometrics'], axis=1))
+        errL1_approx_rc = L1_relative(X_ref.to_numpy())
         X_ref.index = X_ref.index.map(lambda x: f"r{x}")  # adding "r" before
 
-        if st.session_state['rc_flag']:    # in this case we replace the old reference curves approximation
+        # in this case we replace the old reference curves approximation
+        if st.session_state['rc_flag']:
             for ind in X_ref.index:
                 st.session_state['X-X_hat-X_ref'].loc[ind] = X_ref.loc[ind]
 
-        else :  # easier case : there isn't already a reference curves approximation
+        else:  # easier case : there isn't already a reference curves approximation
             st.session_state['X-X_hat-X_ref'] = pd.concat(
                 [st.session_state['X-X_hat-X_ref'], X_ref], axis=0)
             st.session_state['rc_flag'] = True  # They are now result
-        
 
         st.success("Approximation succeed")
-        # Displaying approx error
+        # Displaying approx errors
         col1, col2 = st.columns(2)
-        with col2:
-            st.latex(r''' \sum_{i=1}^{853} \Vert x_i-{x_{ref,i}} \Vert_2 ''')
         with col1:
-            st.metric("Approximation error", err_approx_rc ,
-                        label_visibility="visible")
+            st.latex(r''' \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 ''')
+        with col2:
+            st.metric("sum of quadratic errors", err2_approx_rc,
+                      label_visibility="visible")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.latex(r''' \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} ''')
+        with col2:
+            st.metric("sum of L1-relative errors", errL1_approx_rc,
+                      label_visibility="visible")
 
 with tab_result:
     st.header("Display observations to compare them")
@@ -466,7 +506,7 @@ with tab_result:
 #                         x=st.session_state['granulometrics'].columns, y=M[i, :], mode='lines'),
 #                     row=row, col=col
 #                 )
-                
+
 #             fig.update_xaxes(type='log', tickformat=".1e", dtick=1,showgrid=True)
 #             fig.update_yaxes(showgrid=True)
 #             fig.update_layout(height=1300, width=700,

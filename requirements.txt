@@ -3,4 +3,6 @@ panda
 matplotlib
 scikit-learn
 plotly
+cvxpy
 xlrd==2.0.1
+
