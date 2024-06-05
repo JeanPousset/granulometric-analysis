@@ -188,13 +188,13 @@ with tab_basic:
         with col1:
             st.latex(r''' \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 ''')
         with col2:
-            st.metric("sum of quadratic errors", err2_nmf,
+            st.metric("sum of quadratic errors", value = f"{err2_nmf:.4}",
                       label_visibility="visible")
         col1, col2 = st.columns(2)
         with col1:
             st.latex(r''' \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} ''')
         with col2:
-            st.metric("sum of L1-relative errors", errL1_nmf,
+            st.metric("sum of L1-relative errors", value = f"{errL1_nmf*100:.3}%",
                       label_visibility="visible")
 
         st.header("Visualization")
@@ -414,13 +414,13 @@ with tab_ref_expert:
         with col1:
             st.latex(r''' \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 ''')
         with col2:
-            st.metric("sum of quadratic errors", err2_approx_rc,
+            st.metric("sum of quadratic errors", value = f"{err2_approx_rc:.4}",
                       label_visibility="visible")
         col1, col2 = st.columns(2)
         with col1:
             st.latex(r''' \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} ''')
         with col2:
-            st.metric("sum of L1-relative errors", errL1_approx_rc,
+            st.metric("sum of L1-relative errors", value = f"{errL1_approx_rc*100:.3}%",
                       label_visibility="visible")
 
 with tab_result:
