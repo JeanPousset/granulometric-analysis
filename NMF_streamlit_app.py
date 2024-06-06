@@ -4,7 +4,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from sklearn.decomposition import NMF
 import plotly.graph_objects as go
-import cvxpy as cp # 
+import cvxpy as cp
 # from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm
 from plotly.subplots import make_subplots
 import sys
@@ -14,8 +14,6 @@ st.set_page_config(page_title='NMF test', layout='centered')
 
 
 st.title('Comparaison of differents NMF')
-
-nb_end_members = 8  # to choose ?
 
 
 # data_granulometry_03_06_24
@@ -34,6 +32,8 @@ if 'granulometrics' not in st.session_state:
     st.session_state['granulometrics'] = data
 
 # region initialisation of session variables
+if 'nb_end_members' not in st.session_state:
+    st.session_state['nb_end_members'] = 8
 if 'X-X_hat-X_ref' not in st.session_state:
     st.session_state['X-X_hat-X_ref'] = st.session_state['granulometrics']
 if 'rc_flag' not in st.session_state:
@@ -54,7 +54,7 @@ if 'selected_label' not in st.session_state:
     st.session_state['selected_label'] = []
 if 'A_df' not in st.session_state:
     st.session_state['A_df'] = pd.DataFrame(np.zeros(
-        (st.session_state['granulometrics'].to_numpy().shape[0], nb_end_members)))
+        (st.session_state['granulometrics'].to_numpy().shape[0], st.session_state['nb_end_members'])))
 if 'X-X_hat-X_ref' not in st.session_state:
     st.session_state['X-X_hat-X_ref'] = st.session_state['granulometrics']
 # endregion
@@ -82,17 +82,25 @@ if 'ref_curves' not in st.session_state:
 # region Metrics for the approximation qualities
 
 # Integral approximations with trapeze method for every observations
-def trapeze_aeras(X):   
-    abscisses = np.tile(st.session_state['granulometrics'].columns,(st.session_state['granulometrics'].shape[0],1))
-    return 0.5*np.sum((abscisses[:,1:]-abscisses[:,:-1])*(X[:,1:]+X[:,:-1]))  # return the sum of all areas
+
+
+def trapeze_aeras(X):
+    abscisses = np.tile(st.session_state['granulometrics'].columns,
+                        (st.session_state['granulometrics'].shape[0], 1))
+    # return the sum of all areas
+    return 0.5*np.sum((abscisses[:, 1:]-abscisses[:, :-1])*(X[:, 1:]+X[:, :-1]))
 
 # Calculate quotient between ||X-X_approx||_L1 et ||X||L1
+
+
 def L1_relative(X_approx):
-    numerator = trapeze_aeras(np.abs(X_approx-st.session_state['granulometrics'].to_numpy()))
+    numerator = trapeze_aeras(
+        np.abs(X_approx-st.session_state['granulometrics'].to_numpy()))
     denominator = trapeze_aeras(st.session_state['granulometrics'].to_numpy())
     return numerator/denominator
 
 # endregion
+
 
 tab_basic, tab_ref_expert, tab_result = st.tabs(
     ['basic NMF (with penalization)', 'Experimental references', 'Results'])
@@ -112,9 +120,12 @@ with tab_basic:
 
     st.header("Parameters for basic NMF")
 
-    col1, col2 = st.columns([1, 2])
+    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
 
     with col1:
+        st.number_input("nb of components", key='nb_end_members',min_value=2, max_value=100, step = 1, format="%d")
+
+    with col2:
         loss_choice = st.selectbox(
             "Beta_loss :", ("Frobenius", "kullback-leibler"))
         if loss_choice == "kullback-leibler":
@@ -125,29 +136,20 @@ with tab_basic:
             st.session_state['loss'] = "frobenius"
             st.session_state['solver'] = "cd"
 
-    with col2:
-        param = pd.DataFrame({'l1-l2 ratio': [st.session_state['ratio_l1']],
-                              'penalization coef M': [st.session_state['a_W']],
-                              'penalization coef A': [st.session_state['a_H']], })
-
-        param_choosen = st.data_editor(param, hide_index=True, column_config={
-            "l1-l2 ratio": st.column_config.NumberColumn(min_value=0.0, max_value=1.0, format="%f"),
-            "penalization coef M": st.column_config.NumberColumn(format="%f"),
-            "penalization coef A": st.column_config.NumberColumn(format="%f")
-        }
-        )
+    with col3:
+        st.number_input("l1-l2 ratio", key='ratio_l1', min_value=0.0, max_value=1.0, format="%f")
+    with col4:
+        st.number_input("penalization coef M",format="%f", key='a_W')
+    with col5:
+        st.number_input("penalization coef A",format="%f", key='a_A')
+    
 
     st.header("Algorithm")
 
     if st.button("Lunch basic factorization"):
 
-        # parameters recovery
-        st.session_state['ratio_l1'] = param_choosen.loc[0, 'l1-l2 ratio']
-        st.session_state['a_W'] = param_choosen.loc[0, 'penalization coef M']
-        st.session_state['a_H'] = param_choosen.loc[0, 'penalization coef A']
-
         X = st.session_state['granulometrics'].to_numpy()
-        model = NMF(n_components=nb_end_members,
+        model = NMF(n_components=st.session_state['nb_end_members'],
                     solver=st.session_state['solver'],
                     beta_loss=st.session_state['loss'],
                     init='random',
@@ -188,13 +190,14 @@ with tab_basic:
         with col1:
             st.latex(r''' \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 ''')
         with col2:
-            st.metric("sum of quadratic errors", value = f"{err2_nmf:.4}",
+            st.metric("sum of quadratic errors", value=f"{err2_nmf:.4}",
                       label_visibility="visible")
         col1, col2 = st.columns(2)
         with col1:
-            st.latex(r''' \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} ''')
+            st.latex(
+                r''' \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} ''')
         with col2:
-            st.metric("sum of L1-relative errors", value = f"{errL1_nmf*100:.3}%",
+            st.metric("sum of L1-relative errors", value=f"{errL1_nmf*100:.3}%",
                       label_visibility="visible")
 
         st.header("Visualization")
@@ -217,16 +220,18 @@ with tab_basic:
             fig.update_yaxes(showgrid=True)
             fig.update_layout(height=1300, width=700,
                               title_text="End-members curves", showlegend=False)
+            fig.update_traces(hovertemplate='X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>')
+
 
             st.plotly_chart(fig)
 
         with st.expander("Proportions of EM in our observations"):
             st.session_state['A_df'] = pd.DataFrame(A, index=st.session_state['granulometrics'].index, columns=[
-                                                    f'EM{i}' for i in range(1, nb_end_members+1)])
+                                                    f'EM{i}' for i in range(1, st.session_state['nb_end_members']+1)])
             st.session_state['A_df']['label'] = st.session_state['granulometrics'].index
-            fig = make_subplots(rows=nb_end_members//2,
+            fig = make_subplots(rows=st.session_state['nb_end_members']//2,
                                 cols=1, vertical_spacing=0.05)
-            for i in range(nb_end_members//2):
+            for i in range(st.session_state['nb_end_members']//2):
 
                 first_em = 2*i+1
                 second_em = 2*(i+1)
@@ -249,7 +254,7 @@ with tab_basic:
 
             fig.update_layout(
                 # Ajuster la hauteur de la figure en fonction du nombre de plots
-                height=700 * nb_end_members//2,
+                height=700 * st.session_state['nb_end_members']//2,
                 title_text='Proprotions of End-members',
                 showlegend=False  # Masquer la légende pour simplifier l'affichage
             )
@@ -292,6 +297,8 @@ with tab_ref_expert:
             showlegend=True,
             xaxis_title=" grain diametere (micrometers, log-scale)"
         )
+        fig.update_traces(hovertemplate='X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>')
+
         st.plotly_chart(fig)
 
         fig = go.Figure()
@@ -310,6 +317,8 @@ with tab_ref_expert:
             height=500,
             xaxis_title=" grain diametere (micrometers, log-scale)"
         )
+        fig.update_traces(hovertemplate='X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>')
+
         st.plotly_chart(fig)
 
         st.markdown(
@@ -332,6 +341,8 @@ with tab_ref_expert:
             height=500,
             xaxis_title=" grain diametere (micrometers, log-scale)"
         )
+        fig.update_traces(hovertemplate='X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>')
+
         st.plotly_chart(fig)
 
     st.subheader(
@@ -380,13 +391,18 @@ with tab_ref_expert:
         A_ref = X @ M_ref.T @ np.linalg.inv(M_ref @ M_ref.T)
 
         # Performing minimalization with CVXPY to compare
-        A = cp.Variable((X.shape[0], M_ref.shape[0]))           # Declaration of our minimization variable A
-        constraints = [A >= 0]                                  # Constraint A to be positive
-        objective = cp.Minimize(cp.norm(X - A @ M_ref, 'fro')**2)   # Objective function
-        #problem = cp.Problem(objective)                        # optim without constraint to compare with our direct solution
-        problem = cp.Problem(objective, constraints)            # Definition of our problem
-        problem.solve(solver=cp.SCS, verbose=True, eps=1e-10, max_iters=10000)    # Calling solver
-        A_ref_solv = A.value                                    # We get the result 
+        # Declaration of our minimization variable A
+        A = cp.Variable((X.shape[0], M_ref.shape[0]))
+        # Constraint A to be positive
+        constraints = [A >= 0]
+        objective = cp.Minimize(
+            cp.norm(X - A @ M_ref, 'fro')**2)   # Objective function
+        # problem = cp.Problem(objective)                        # optim without constraint to compare with our direct solution
+        # Definition of our problem
+        problem = cp.Problem(objective, constraints)
+        problem.solve(solver=cp.SCS, verbose=True, eps=1e-10,
+                      max_iters=10000)    # Calling solver
+        A_ref_solv = A.value                                    # We get the result
 
         # X_ref the approximations of our observations with ref_curves
         X_ref = pd.DataFrame(
@@ -414,13 +430,14 @@ with tab_ref_expert:
         with col1:
             st.latex(r''' \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 ''')
         with col2:
-            st.metric("sum of quadratic errors", value = f"{err2_approx_rc:.4}",
+            st.metric("sum of quadratic errors", value=f"{err2_approx_rc:.4}",
                       label_visibility="visible")
         col1, col2 = st.columns(2)
         with col1:
-            st.latex(r''' \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} ''')
+            st.latex(
+                r''' \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} ''')
         with col2:
-            st.metric("sum of L1-relative errors", value = f"{errL1_approx_rc*100:.3}%",
+            st.metric("sum of L1-relative errors", value=f"{errL1_approx_rc*100:.3}%",
                       label_visibility="visible")
 
 with tab_result:
@@ -474,7 +491,7 @@ with tab_result:
 #     if st.button("Lunch robust factorization"):
 #         X = st.session_state['granulometrics'].to_numpy()
 #         A, M, R, obj = robust_nmf(X,
-#                                   rank=nb_end_members,
+#                                   rank=st.session_state['nb_end_members'],
 #                                   beta=st.session_state['beta_r'],
 #                                   init='random',
 #                                   reg_val=st.session_state['lambda_robust'],
@@ -516,11 +533,11 @@ with tab_result:
 
 #         with st.expander("Proportions of EM in our observations"):
 #             st.session_state['A_df'] = pd.DataFrame(A, index=st.session_state['granulometrics'].index, columns=[
-#                                                     f'EM{i}' for i in range(1, nb_end_members+1)])
+#                                                     f'EM{i}' for i in range(1, st.session_state['nb_end_members']+1)])
 #             st.session_state['A_df']['label'] = st.session_state['granulometrics'].index
-#             fig = make_subplots(rows=nb_end_members//2,
+#             fig = make_subplots(rows=st.session_state['nb_end_members']//2,
 #                                 cols=1, vertical_spacing=0.05)
-#             for i in range(nb_end_members//2):
+#             for i in range(st.session_state['nb_end_members']//2):
 
 #                 first_em = 2*i+1
 #                 second_em = 2*(i+1)
@@ -543,7 +560,7 @@ with tab_result:
 
 #             fig.update_layout(
 #                 # Ajuster la hauteur de la figure en fonction du nombre de plots
-#                 height=700 * nb_end_members//2,
+#                 height=700 * st.session_state['nb_end_members']//2,
 #                 title_text='Proprotions of End-members',
 #                 showlegend=False  # Masquer la légende pour simplifier l'affichage
 #             )
