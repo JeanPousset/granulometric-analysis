@@ -327,7 +327,8 @@ with tab_ref_expert:
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_ArgilesFines'][0, :], y=st.session_state['ref_curves']
                                      ['ref_ArgilesFines'][1, :], mode='lines', name='Argiles Fines (<1 microns)'))
-            fig.update_xaxes(type="log", tickformat=".1e", dtick=1)
+            fig.update_xaxes(type="log", tickformat=".1e",
+                             dtick=1, showgrid=True)
             fig.update_layout(
                 height=500,
                 showlegend=True,
@@ -348,7 +349,7 @@ with tab_ref_expert:
             fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_SablesGrossiers'][0, :], y=st.session_state['ref_curves']
                                      ['ref_SablesGrossiers'][1, :], mode='lines', name='Sables Grossiers (>100 microns)'))
 
-            fig.update_xaxes(type="log", tickformat=".1e")
+            fig.update_xaxes(type="log", tickformat=".1e", showgrid=True)
             fig.update_layout(
                 # Ajuster la hauteur de la figure en fonction du nombre de plots
                 height=500,
@@ -373,7 +374,8 @@ with tab_ref_expert:
             fig.add_trace(go.Scatter(x=st.session_state['ref_curves']['ref_Loess'][0, :], y=st.session_state['ref_curves']
                                      ['ref_Loess'][1, :], mode='lines', name='Loess'))
 
-            fig.update_xaxes(type="log", tickformat=".1e", dtick=1)
+            fig.update_xaxes(type="log", tickformat=".1e",
+                             dtick=1, showgrid=True)
             fig.update_layout(
                 # Ajuster la hauteur de la figure en fonction du nombre de plots
                 height=500,
@@ -542,12 +544,12 @@ with tab_result:
 
     if st.button('Plots curves'):
         curves_without_l1_rel_norm = st.session_state['X-X_hat-X_ref']
-        fig = go.Figure()   
+        fig = go.Figure()
         for label in st.session_state['selected_obs_labels']+st.session_state['selected_approx_nmf_labels']+st.session_state['selected_approx_rc_labels']:
             fig.add_trace(go.Scatter(x=curves_without_l1_rel_norm.columns,
                           y=curves_without_l1_rel_norm.loc[label], mode='lines', name=label))
 
-        fig.update_xaxes(type="log", tickformat=".1e", dtick=1)
+        fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
         fig.update_layout(
             height=800,
             width=1000,
