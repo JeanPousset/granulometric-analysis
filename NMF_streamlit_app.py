@@ -64,22 +64,23 @@ if 'X-X_hat-X_ref' not in st.session_state:
 # Loading reference curves
 if 'ref_curves' not in st.session_state:
     st.session_state['ref_curves'] = {}  # empty initialization
-    st.session_state['ref_curves']['ref_Alterites'] = np.genfromtxt(
-        "ref_curves/ref_Alterites.csv", delimiter=',')
     st.session_state['ref_curves']['ref_ArgilesFines'] = np.genfromtxt(
         "ref_curves/ref_ArgilesFines.csv", delimiter=',')
     st.session_state['ref_curves']['ref_ArgilesClassiques'] = np.genfromtxt(
         "ref_curves/ref_ArgilesClassiques.csv", delimiter=',')
-    st.session_state['ref_curves']['ref_LimonsGrossiers'] = np.genfromtxt(
-        "ref_curves/ref_LimonsGrossiers.csv", delimiter=',')
-    st.session_state['ref_curves']['ref_LimonsGrossiersLoess'] = np.genfromtxt(
-        "ref_curves/ref_LimonsGrossiersLoess.csv", delimiter=',')
-    st.session_state['ref_curves']['ref_Loess'] = np.genfromtxt(
-        "ref_curves/ref_Loess.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_Alterites'] = np.genfromtxt(
+        "ref_curves/ref_Alterites.csv", delimiter=',')
     st.session_state['ref_curves']['ref_SablesFins'] = np.genfromtxt(
         "ref_curves/ref_SablesFins.csv", delimiter=',')
     st.session_state['ref_curves']['ref_SablesGrossiers'] = np.genfromtxt(
         "ref_curves/ref_SablesGrossiers.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_Loess'] = np.genfromtxt(
+        "ref_curves/ref_Loess.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_LimonsGrossiers'] = np.genfromtxt(
+        "ref_curves/ref_LimonsGrossiers.csv", delimiter=',')
+    st.session_state['ref_curves']['ref_LimonsGrossiersLoess'] = np.genfromtxt(
+        "ref_curves/ref_LimonsGrossiersLoess.csv", delimiter=',')
+    
 
 # region Other variables / functions
 # Integral approximations with trapeze method for every observation
@@ -406,15 +407,22 @@ with tab_ref_expert:
             # Deleting other 20-50 microns that have not been selected
             st.session_state['ref_curves_selected'] = st.session_state['ref_curves'].copy(
             )
+            st.session_state['rc_label'] = ['Argiles Fines','Argiles Grossier','Alterites','Sables Fins','Sables grossiers','Loess','Limon grossiers','Limons grossiers Loess']
             if st.session_state['ref_20_50'] == 'Limons Grossiers':
                 del st.session_state['ref_curves_selected']["ref_LimonsGrossiersLoess"]
                 del st.session_state['ref_curves_selected']["ref_Loess"]
+                st.session_state['rc_label'][5] = 'Limon grossiers'
+                st.session_state['rc_label']=st.session_state['rc_label'][0:6]
             elif st.session_state['ref_20_50'] == 'Limons Grossiers-Loess':
                 del st.session_state['ref_curves_selected']["ref_LimonsGrossiers"]
                 del st.session_state['ref_curves_selected']["ref_Loess"]
+                st.session_state['rc_label'][5] = 'Limon grossiers Loess'
+                st.session_state['rc_label']=st.session_state['rc_label'][0:6]
             elif st.session_state['ref_20_50'] == 'Limons Grossiers-Loess':
                 del st.session_state['ref_curves_selected']["ref_LimonsGrossiersLoess"]
                 del st.session_state['ref_curves_selected']["ref_LimonsGrossiers"]
+                st.session_state['rc_label'][5] = 'Loess'
+                st.session_state['rc_label']=st.session_state['rc_label'][0:6]
             # Do nothing if all 3 at the same time selected
 
             # Gathering y from every reference curve into our M_ref matrix
@@ -453,16 +461,8 @@ with tab_ref_expert:
             Prop = np.apply_along_axis(lambda x: x/np.sum(x)*100, 1, Prop)
 
             # naming the columns of Prop with regards of where the peak is located for each EM
-            # We have to use temporary variable because we can't change columns name one by one
-            prop_col_label = [0]*Prop.shape[1]
-            for i in range(M_ref.shape[0]):
-                peak = np.argmax(M_ref[i, :])
-                for key, values in materials.items():
-                    if peak < values:
-                        prop_col_label[i] = key+f" ({peak})"
-                        break
             st.session_state['Prop_rc'] = pd.DataFrame(
-                Prop, index=st.session_state['granulometrics'].index, columns=prop_col_label)
+                Prop, index=st.session_state['granulometrics'].index, columns=st.session_state['rc_label'])
 
             # Approximation errors l2
             err2_approx_rc = np.sum(np.linalg.norm(
