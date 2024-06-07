@@ -37,7 +37,7 @@ if 'nb_end_members' not in st.session_state:
 if 'X-X_hat-X_ref' not in st.session_state:
     st.session_state['X-X_hat-X_ref'] = st.session_state['granulometrics'].copy()
     # to have the same columns as approximations
-    #st.session_state['X-X_hat-X_ref']['L1_rel_norm'] = '-'
+    # st.session_state['X-X_hat-X_ref']['L1_rel_norm'] = '-'
 if 'rc_flag' not in st.session_state:
     st.session_state['rc_flag'] = False
 if 'nmf_flag' not in st.session_state:
@@ -80,7 +80,7 @@ if 'ref_curves' not in st.session_state:
         "ref_curves/ref_LimonsGrossiers.csv", delimiter=',')
     st.session_state['ref_curves']['ref_LimonsGrossiersLoess'] = np.genfromtxt(
         "ref_curves/ref_LimonsGrossiersLoess.csv", delimiter=',')
-    
+
 
 # region Other variables / functions
 # Integral approximations with trapeze method for every observation
@@ -201,7 +201,8 @@ with tab_basic:
             st.session_state['Prop_nmf']['L1_rel_norm (%)'] = X_nmf.apply(
                 lambda row: L1_relative(row.values, row.name), axis=1)
             # L1-relativ mean
-            errL1_nmf = np.mean(st.session_state['Prop_nmf']['L1_rel_norm (%)'])
+            errL1_nmf = np.mean(
+                st.session_state['Prop_nmf']['L1_rel_norm (%)'])
 
             # adding approximation to our result df
             X_nmf.index = X_nmf.index.map(
@@ -237,7 +238,7 @@ with tab_basic:
 
             with st.expander("End-Members"):
 
-                fig = make_subplots(rows=st.session_state['nb_end_members']//2+st.session_state['nb_end_members']%2, cols=2, subplot_titles=[
+                fig = make_subplots(rows=st.session_state['nb_end_members']//2+st.session_state['nb_end_members'] % 2, cols=2, subplot_titles=[
                                     f"End-Member {i}" for i in range(1, st.session_state['nb_end_members']+1)])
                 for i in range(st.session_state['nb_end_members']):
                     row = (i // 2) + 1
@@ -389,7 +390,7 @@ with tab_ref_expert:
                     (Limons grossier, Limon grossier-loess, Loess) for the peak between 20 and 50 $\\mu m$. Please 
                     select bellow which reference curve to use in approximation.""")
         st.session_state['ref_20_50'] = st.radio(
-            "", ['Limons Grossiers', 'Limons Grossiers-Loess', 'Loess'," DOESN'T WORK ! : All 3 at the same time "])
+            "", ['All 3 at the same time', 'Limons Grossiers', 'Limons Grossiers-Loess', 'Loess'])
 
         st.subheader(
             "Algorithm to perform an approximation of X from the reference curves")
@@ -407,22 +408,23 @@ with tab_ref_expert:
             # Deleting other 20-50 microns that have not been selected
             st.session_state['ref_curves_selected'] = st.session_state['ref_curves'].copy(
             )
-            st.session_state['rc_label'] = ['Argiles Fines','Argiles Grossier','Alterites','Sables Fins','Sables grossiers','Loess','Limon grossiers','Limons grossiers Loess']
+            st.session_state['rc_label'] = ['Argiles Fines', 'Argiles Grossier', 'Alterites',
+                                            'Sables Fins', 'Sables grossiers', 'Loess', 'Limon grossiers', 'Limons grossiers Loess']
             if st.session_state['ref_20_50'] == 'Limons Grossiers':
                 del st.session_state['ref_curves_selected']["ref_LimonsGrossiersLoess"]
                 del st.session_state['ref_curves_selected']["ref_Loess"]
                 st.session_state['rc_label'][5] = 'Limon grossiers'
-                st.session_state['rc_label']=st.session_state['rc_label'][0:6]
+                st.session_state['rc_label'] = st.session_state['rc_label'][0:6]
             elif st.session_state['ref_20_50'] == 'Limons Grossiers-Loess':
                 del st.session_state['ref_curves_selected']["ref_LimonsGrossiers"]
                 del st.session_state['ref_curves_selected']["ref_Loess"]
                 st.session_state['rc_label'][5] = 'Limon grossiers Loess'
-                st.session_state['rc_label']=st.session_state['rc_label'][0:6]
+                st.session_state['rc_label'] = st.session_state['rc_label'][0:6]
             elif st.session_state['ref_20_50'] == 'Limons Grossiers-Loess':
                 del st.session_state['ref_curves_selected']["ref_LimonsGrossiersLoess"]
                 del st.session_state['ref_curves_selected']["ref_LimonsGrossiers"]
                 st.session_state['rc_label'][5] = 'Loess'
-                st.session_state['rc_label']=st.session_state['rc_label'][0:6]
+                st.session_state['rc_label'] = st.session_state['rc_label'][0:6]
             # Do nothing if all 3 at the same time selected
 
             # Gathering y from every reference curve into our M_ref matrix
@@ -471,7 +473,8 @@ with tab_ref_expert:
             st.session_state['Prop_rc']['L1_rel_norm (%)'] = X_ref.apply(
                 lambda row: L1_relative(row.values, row.name), axis=1)
             # L1-relativ mean
-            errL1_approx_rc = np.mean(st.session_state['Prop_rc']['L1_rel_norm (%)'])
+            errL1_approx_rc = np.mean(
+                st.session_state['Prop_rc']['L1_rel_norm (%)'])
 
             X_ref.index = X_ref.index.map(
                 lambda x: f"r{x}")  # adding "r" before
@@ -526,26 +529,36 @@ with tab_result:
                        options=labels_approx_rc, key='selected_approx_rc_labels')
 
     if st.session_state['nmf_flag']:
-        st.subheader("Proportions of EM (NMF-approximations) for selected observations")
+        st.subheader(
+            "Proportions of EM (NMF-approximations) for selected observations")
         st.dataframe(
             st.session_state['Prop_nmf'].loc[st.session_state['selected_obs_labels']])
-    
+
     if st.session_state['rc_flag']:
-        st.subheader("Proportions of reference curve (approximations) for selected observations")
+        st.subheader(
+            "Proportions of reference curve (approximations) for selected observations")
         st.dataframe(
             st.session_state['Prop_rc'].loc[st.session_state['selected_obs_labels']])
 
     if st.button('Plots curves'):
-        fig, ax = plt.subplots()
         curves_without_l1_rel_norm = st.session_state['X-X_hat-X_ref']
+        fig = go.Figure()   
         for label in st.session_state['selected_obs_labels']+st.session_state['selected_approx_nmf_labels']+st.session_state['selected_approx_rc_labels']:
-            ax.semilogx(curves_without_l1_rel_norm.columns,
-                        curves_without_l1_rel_norm.loc[label], label=label)
+            fig.add_trace(go.Scatter(x=curves_without_l1_rel_norm.columns,
+                          y=curves_without_l1_rel_norm.loc[label], mode='lines', name=label))
 
-        ax.set_xlabel('micrometers')
-        ax.set_title('granulometrics curves of selected observations')
-        ax.legend()
-        st.pyplot(fig)
+        fig.update_xaxes(type="log", tickformat=".1e", dtick=1)
+        fig.update_layout(
+            height=800,
+            width=1000,
+            showlegend=True,
+            xaxis_title=" grain diametere (micrometers, log-scale)"
+        )
+        fig.update_traces(
+            hovertemplate='X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>')
+
+        st.plotly_chart(fig)
+
 
 # region tab_robust
 # with tab_robust:
