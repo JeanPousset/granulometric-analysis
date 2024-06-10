@@ -403,7 +403,7 @@ with tab_ref_expert:
         st.markdown(
             "- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation.")
         st.markdown("So we have the following problem :")
-        st.latex(r''' A_{ref} = \arg \min_A \Vert X-AM_{ref} \Vert_F^2 ''')
+        st.latex(r''' A_{ref} = \arg \min_{A\geq 0} \Vert X-AM_{ref} \Vert_F^2 ''')
 
         if st.button('Perform estimations with reference curves'):
 
