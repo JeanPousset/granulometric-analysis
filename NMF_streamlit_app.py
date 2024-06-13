@@ -80,15 +80,12 @@ if 'ref_curves' not in st.session_state:
         "ref_curves/ref_LimonsGrossiers.csv", delimiter=',')
     st.session_state['ref_curves']['ref_LimonsGrossiersLoess'] = np.genfromtxt(
         "ref_curves/ref_LimonsGrossiersLoess.csv", delimiter=',')
-
-
 # region Other variables / functions
 # Integral approximations with trapeze method for every observation
 
 
 def trapeze_areas(x):
     return 0.5*np.sum((st.session_state['granulometrics'].columns[1:]-st.session_state['granulometrics'].columns[:-1])*(x[1:]+x[:-1]))
-# Calculate quotient between ||x-x_approx||_L1 et ||x||L1
 
 
 def L1_relative(x_approx, obs_index):
@@ -96,6 +93,7 @@ def L1_relative(x_approx, obs_index):
     numerator = trapeze_areas(np.abs(x_approx-x_obs))
     denominator = trapeze_areas(x_obs)
     return numerator/denominator*100
+# Calculate quotient between ||x-x_approx||_L1 et ||x||L1
 
 
 # list of labelized materials regarding the location of the peak
@@ -403,7 +401,8 @@ with tab_ref_expert:
         st.markdown(
             "- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation.")
         st.markdown("So we have the following problem :")
-        st.latex(r''' A_{ref} = \arg \min_{A\geq 0} \Vert X-AM_{ref} \Vert_F^2 ''')
+        st.latex(
+            r''' A_{ref} = \arg \min_{A\geq 0} \Vert X-AM_{ref} \Vert_F^2 ''')
 
         if st.button('Perform estimations with reference curves'):
 
