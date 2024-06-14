@@ -32,6 +32,8 @@ if 'granulometrics' not in st.session_state:
     st.session_state['granulometrics'] = data
 
 # region initialisation of session variables
+if 'discrete_dictionnary_decomposition' not in st.session_state:
+    st.session_state['discrete_dictionnary_decomposition'] = False
 if 'nb_end_members' not in st.session_state:
     st.session_state['nb_end_members'] = 8
 if 'X-X_hat-X_ref' not in st.session_state:
@@ -83,7 +85,6 @@ if 'ref_curves' not in st.session_state:
 # region Other variables / functions
 # Integral approximations with trapeze method for every observation
 
-
 def trapeze_areas(x):
     return 0.5*np.sum((st.session_state['granulometrics'].columns[1:]-st.session_state['granulometrics'].columns[:-1])*(x[1:]+x[:-1]))
 
@@ -98,6 +99,7 @@ def L1_relative(x_approx, obs_index):
 
 # list of labelized materials regarding the location of the peak
 materials = {
+    'Autre':0.03,
     'Argile Fines': 1,
     'Argile Grossières': 7,
     'Alterites': 20,
@@ -108,8 +110,72 @@ materials = {
 # endregion
 
 
-tab_basic, tab_ref_expert, tab_result = st.tabs(
-    ['basic NMF (with penalization)', 'Experimental references', 'Results'])
+tab_discrete_dict, tab_basic, tab_ref_expert, tab_result = st.tabs(
+    ['Discrete dictionnary', 'Basic NMF (with penalization)', 'Experimental references', 'Results'])
+
+with tab_discrete_dict:
+    col01, col02, col03 = st.columns([1, 3, 1])
+    with col02:
+        st.header("Decomposition onto a discrete dictionnary")
+        st.markdown(r"""In this section we try do decompose our observations with a discrete dictionnary 
+                    of unimodale curves $(\mathcal{M})$ obtained by duplicating the reference curves and shifting the spike
+                     locations. To obtain these decomposition we're going to resolve the following optimization 
+                    problem for each observation $x$ :""")
+        st.latex(
+            r'''\arg \min_{a \in \mathbb{R}_+^{\vert \mathcal{M} \vert}} \frac{1}{2}\Vert x-\mathcal{M}a \Vert_2^2 + \lambda\Vert a\Vert_1''')
+
+        st.markdown(r"""Where $\mathcal{M}$ the dictionnary is presentend as a matrix where each row contains an unimodal curve.
+                    We reconize here a LASSO problem except that the variable $a$ is non-negative. For this kind of problem (NN-LASSO), there
+                     are several methods we can use. Please select bellow wich one you want.""")
+        st.selectbox("Choose the resolution method to be applied", options=['Projected gradient',
+            'Frank-Wolfe', 'Proximal Gradient with constant step-size iteration', 'Proximal Gradient with backtracking iteration'], key='nn_lasso_method')
+
+        if st.button("Run decomposition"):
+            
+            # region Creation of the discrete dictionnary
+            mesurement_points = st.session_state['granulometrics'].columns
+            st.session_state['discrete_dictionnary'] = pd.DataFrame(columns=mesurement_points)
+
+            for rc_name,rc in st.session_state['ref_curves'].items():
+                
+                # Find the first and last index of the measurement points of the peak-interval for the material of the reference curve
+                peak_ind = np.argmax(rc[1,:])
+                peak_loc = mesurement_points[peak_ind]
+                mat_rc = ""         # name of the material for the interval of our ref-curve's peak
+                first_ind = 0       
+                last_ind = 0        
+                mat_keys = list(materials.keys())
+                for mat_prec,mat in zip(mat_keys,mat_keys[1:]):
+                    if peak_loc < materials[mat] :
+                        mat_rc = mat
+                        st.write(f'{mat_prec} -> {mat}')
+                        first_ind = mesurement_points.get_loc(materials[mat_prec])       # index of the first mesurement point for the interval of this rc 
+                        last_ind = mesurement_points.get_loc(materials[mat])-1 # index of the last mesurement point for the interval of this rc
+                        st.write(last_ind)
+                        st.write(mesurement_points[last_ind])
+                        rel_peak_ind = peak_ind-first_ind
+                        rel_last_ind = last_ind-first_ind
+                        break
+                
+                for i in range(rel_peak_ind+1):
+                    # Shifting ref curve to the left by dropping the i first values and adding i zeros at the end
+                    duplicate = np.pad(rc[1,i:],(0,i),mode = 'constant',constant_values=0)
+                    st.session_state['discrete_dictionnary'].loc[f"{rc_name} ({mesurement_points[peak_ind-i]})"] = duplicate
+                
+                for i in range(1,rel_last_ind-rel_peak_ind+1):
+                    # Shifting ref curve to the right by dropping the i last values and adding i zeros at the begining
+                    duplicate = np.pad(rc[1,:-i],(i,0),mode = 'constant',constant_values=0)
+                    #st.write(peak_ind+i)
+                    st.session_state['discrete_dictionnary'].loc[f"{rc_name} ({mesurement_points[peak_ind+i]})"] = duplicate
+                
+
+            st.session_state['discrete_dictionnary_decomposition'] = True
+
+            st.dataframe(st.session_state['discrete_dictionnary'])
+
+
+
+
 
 with tab_basic:
     col01, col02, col03 = st.columns([1, 3, 1])
