@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+import time
 import matplotlib.pyplot as plt
 from sklearn.decomposition import NMF
 import plotly.graph_objects as go
@@ -85,6 +86,7 @@ if 'ref_curves' not in st.session_state:
 # region Other variables / functions
 # Integral approximations with trapeze method for every observation
 
+
 def trapeze_areas(x):
     return 0.5*np.sum((st.session_state['granulometrics'].columns[1:]-st.session_state['granulometrics'].columns[:-1])*(x[1:]+x[:-1]))
 
@@ -99,7 +101,7 @@ def L1_relative(x_approx, obs_index):
 
 # list of labelized materials regarding the location of the peak
 materials = {
-    'Autre':0.03,
+    'Autre': 0.03,
     'Argile Fines': 1,
     'Argile Grossières': 7,
     'Alterites': 20,
@@ -127,54 +129,161 @@ with tab_discrete_dict:
         st.markdown(r"""Where $\mathcal{M}$ the dictionnary is presentend as a matrix where each row contains an unimodal curve.
                     We reconize here a LASSO problem except that the variable $a$ is non-negative. For this kind of problem (NN-LASSO), there
                      are several methods we can use. Please select bellow wich one you want.""")
-        st.selectbox("Choose the resolution method to be applied", options=['Projected gradient',
-            'Frank-Wolfe', 'Proximal Gradient with constant step-size iteration', 'Proximal Gradient with backtracking iteration'], key='nn_lasso_method')
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.selectbox("Choose the resolution method", options=['Proximal Gradient with constant step-size iteration',
+                         'Frank-Wolfe', 'Projected gradient', 'Proximal Gradient with backtracking iteration'], key='nn_lasso_method')
+        with col2:
+            st.number_input("Coefficient of penalization (lambda)",
+                            key='lambda_nn_lasso', value=0.0, min_value=0.0, step=0.01)
 
         if st.button("Run decomposition"):
-            
+
             # region Creation of the discrete dictionnary
             mesurement_points = st.session_state['granulometrics'].columns
-            st.session_state['discrete_dictionnary'] = pd.DataFrame(columns=mesurement_points)
+            st.session_state['discrete_dictionnary'] = pd.DataFrame(
+                columns=mesurement_points)
 
-            for rc_name,rc in st.session_state['ref_curves'].items():
-                
+            for rc_name, rc in st.session_state['ref_curves'].items():
+
                 # Find the first and last index of the measurement points of the peak-interval for the material of the reference curve
-                peak_ind = np.argmax(rc[1,:])
+                peak_ind = np.argmax(rc[1, :])
                 peak_loc = mesurement_points[peak_ind]
                 mat_rc = ""         # name of the material for the interval of our ref-curve's peak
-                first_ind = 0       
-                last_ind = 0        
+                first_ind = 0
+                last_ind = 0
                 mat_keys = list(materials.keys())
-                for mat_prec,mat in zip(mat_keys,mat_keys[1:]):
-                    if peak_loc < materials[mat] :
+                for mat_prec, mat in zip(mat_keys, mat_keys[1:]):
+                    if peak_loc < materials[mat]:
                         mat_rc = mat
-                        st.write(f'{mat_prec} -> {mat}')
-                        first_ind = mesurement_points.get_loc(materials[mat_prec])       # index of the first mesurement point for the interval of this rc 
-                        last_ind = mesurement_points.get_loc(materials[mat])-1 # index of the last mesurement point for the interval of this rc
-                        st.write(last_ind)
-                        st.write(mesurement_points[last_ind])
+                        # index of the first mesurement point for the interval of this rc
+                        first_ind = mesurement_points.get_loc(
+                            materials[mat_prec])
+                        # index of the last mesurement point for the interval of this rc
+                        last_ind = mesurement_points.get_loc(materials[mat])-1
                         rel_peak_ind = peak_ind-first_ind
                         rel_last_ind = last_ind-first_ind
                         break
-                
+
                 for i in range(rel_peak_ind+1):
                     # Shifting ref curve to the left by dropping the i first values and adding i zeros at the end
-                    duplicate = np.pad(rc[1,i:],(0,i),mode = 'constant',constant_values=0)
-                    st.session_state['discrete_dictionnary'].loc[f"{rc_name} ({mesurement_points[peak_ind-i]})"] = duplicate
-                
-                for i in range(1,rel_last_ind-rel_peak_ind+1):
+                    duplicate = np.pad(rc[1, i:], (0, i),
+                                       mode='constant', constant_values=0)
+                    st.session_state['discrete_dictionnary'].loc[
+                        f"{rc_name} ({mesurement_points[peak_ind-i]})"] = duplicate
+
+                for i in range(1, rel_last_ind-rel_peak_ind+1):
                     # Shifting ref curve to the right by dropping the i last values and adding i zeros at the begining
-                    duplicate = np.pad(rc[1,:-i],(i,0),mode = 'constant',constant_values=0)
-                    #st.write(peak_ind+i)
-                    st.session_state['discrete_dictionnary'].loc[f"{rc_name} ({mesurement_points[peak_ind+i]})"] = duplicate
-                
+                    duplicate = np.pad(
+                        rc[1, :-i], (i, 0), mode='constant', constant_values=0)
+                    # st.write(peak_ind+i)
+                    st.session_state['discrete_dictionnary'].loc[
+                        f"{rc_name} ({mesurement_points[peak_ind+i]})"] = duplicate
 
+            # endregion
+
+            # region algorithms
+
+            M = np.transpose(
+                st.session_state['discrete_dictionnary'].to_numpy())
+            # hyper-parameters
+            prec = 1e-3
+            it_max = 1e4
+            rho = 1/np.max(np.linalg.eigvals(np.dot(M.T,M)))    # 1/L
+
+            MtM = np.dot(M.T, M)  # saving result to optimize
+
+            if st.session_state['nn_lasso_method'] == 'Projected gradient':
+
+                def decomposition_algo(x):
+                    a = np.random.rand(M.shape[1])
+
+                    # saving result to re_use it at each iterations
+                    Mx = np.dot(M.T, x).reshape(a.shape)
+                    # each element of the vector is the penalization value
+                    Lambda = np.full(
+                        (a.shape), st.session_state['lambda_nn_lasso'])
+                    err = prec+1
+                    it = 0
+
+                    while err > prec and it < it_max:
+                        a1 = np.maximum(0, a-rho*(np.dot(MtM, a)-Mx+Lambda))
+                        # st.write(a1)
+                        err = np.linalg.norm(a1-a)
+                        a = a1.copy()
+                        it = it+1
+
+                    if it == it_max:
+                        fegh = 3
+                        st.warning("Non-convergence for projected gradient method")
+
+                    # argmin, approx, and nb of iterations
+                    return a, np.dot(M, a).flatten(), it
+
+            if st.session_state['nn_lasso_method'] == 'Proximal Gradient with constant step-size iteration':
+                def decomposition_algo(x):
+                    a = np.random.rand(M.shape[1])
+
+                    # saving result to re_use it at each iterations
+                    Mx = np.dot(M.T, x).reshape(a.shape)
+                    # each element of the vector is the penalization value
+                    Lambda = np.full(
+                        (a.shape), st.session_state['lambda_nn_lasso'])
+                    err = prec+1
+                    it = 0
+
+                    def prox_l1(z):
+                        return np.sign(z)*np.maximum(np.abs(z)-Lambda*rho, 0)
+
+                    while err > prec and it < it_max:
+                        a1 = prox_l1(a-rho*(np.dot(MtM, a)-Mx))
+                        # st.write(a1)
+                        err = np.linalg.norm(a1-a)
+                        #st.write(err)
+                        a = a1.copy()
+
+                        it = it+1
+
+                    if it == it_max:
+                        fegh = 3
+                        st.warning("Non-convergence for projected gradient method")
+
+                    # argmin, approx, and nb of iterations
+                    return a, np.dot(M, a).flatten(), it
+
+            # endregion
+
+            # region Decomposition
+            st.session_state['nn_lasso_approximation'] = pd.DataFrame(
+                columns=mesurement_points)
+            st.session_state['nn_lasso_decomposition'] = []
+
+            nb_it_total = 0
+
+            start_time = time.time()
+            for index, row in st.session_state['granulometrics'].iterrows():
+                # compute decomposition for our observation x_i
+                a_i, approx_i, it_i = decomposition_algo(row.to_numpy())
+                nb_it_total = nb_it_total + it_i
+                st.session_state['nn_lasso_approximation'].loc[index] = approx_i
+
+                # saving coefficient that are non-zero
+                coef_dict_i = {}
+                for i in range(a_i.shape[0]):
+                    if a_i[i] > 0:
+                        coef_dict_i[st.session_state['discrete_dictionnary'].index[i]] = a_i[i]
+                st.session_state['nn_lasso_decomposition'].append(
+                    (index, coef_dict_i))
+            
+            end_time = time.time()
+
+            mean_it = (1.0*nb_it_total)/len(st.session_state['granulometrics'])
+            st.write(mean_it)
+            st.write(f"Execution time : {end_time-start_time} seconds")
+            st.success("Decomposition computed with success")
             st.session_state['discrete_dictionnary_decomposition'] = True
-
-            st.dataframe(st.session_state['discrete_dictionnary'])
-
-
-
 
 
 with tab_basic:
