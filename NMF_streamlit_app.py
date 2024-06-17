@@ -33,8 +33,8 @@ if 'granulometrics' not in st.session_state:
     st.session_state['granulometrics'] = data
 
 # region initialisation of session variables
-if 'discrete_dictionnary_decomposition' not in st.session_state:
-    st.session_state['discrete_dictionnary_decomposition'] = False
+if 'dd_flag' not in st.session_state:
+    st.session_state['dd_flag'] = False
 if 'nb_end_members' not in st.session_state:
     st.session_state['nb_end_members'] = 8
 if 'X-X_hat-X_ref' not in st.session_state:
@@ -137,7 +137,7 @@ with tab_discrete_dict:
                          'Frank-Wolfe', 'Projected gradient', 'Proximal Gradient with backtracking iteration'], key='nn_lasso_method')
         with col2:
             st.number_input("Coefficient of penalization (lambda)",
-                            key='lambda_nn_lasso', value=0.0, min_value=0.0, step=0.01)
+                            key='lambda_nn_lasso', value=5.0, min_value=0.0, step=1.0)
 
         if st.button("Run decomposition"):
 
@@ -182,6 +182,13 @@ with tab_discrete_dict:
                     st.session_state['discrete_dictionnary'].loc[
                         f"{rc_name} ({mesurement_points[peak_ind+i]})"] = duplicate
 
+                # Precompute areas of curves in order to calculate proportions after
+                st.session_state['aeras_dd_curves'] = np.zeros(
+                    st.session_state['discrete_dictionnary'].shape[0])
+                for i in range(st.session_state['discrete_dictionnary'].shape[0]):
+                    st.session_state['aeras_dd_curves'][i] = trapeze_areas(
+                        st.session_state['discrete_dictionnary'].iloc[i].to_numpy())
+
             # endregion
 
             # region algorithms
@@ -191,9 +198,8 @@ with tab_discrete_dict:
             # hyper-parameters
             prec = 1e-3
             it_max = 1e4
-            rho = 1/np.max(np.linalg.eigvals(np.dot(M.T,M)))    # 1/L
-
             MtM = np.dot(M.T, M)  # saving result to optimize
+            rho = 1/(np.real(np.max(np.linalg.eigvals(MtM))))    # 1/L
 
             if st.session_state['nn_lasso_method'] == 'Projected gradient':
 
@@ -217,7 +223,8 @@ with tab_discrete_dict:
 
                     if it == it_max:
                         fegh = 3
-                        st.warning("Non-convergence for projected gradient method")
+                        st.warning(
+                            "Non-convergence for projected gradient method")
 
                     # argmin, approx, and nb of iterations
                     return a, np.dot(M, a).flatten(), it
@@ -239,16 +246,14 @@ with tab_discrete_dict:
 
                     while err > prec and it < it_max:
                         a1 = prox_l1(a-rho*(np.dot(MtM, a)-Mx))
-                        # st.write(a1)
                         err = np.linalg.norm(a1-a)
-                        #st.write(err)
                         a = a1.copy()
 
                         it = it+1
 
                     if it == it_max:
-                        fegh = 3
-                        st.warning("Non-convergence for projected gradient method")
+                        st.warning(
+                            "Non-convergence for projected gradient method")
 
                     # argmin, approx, and nb of iterations
                     return a, np.dot(M, a).flatten(), it
@@ -256,34 +261,36 @@ with tab_discrete_dict:
             # endregion
 
             # region Decomposition
-            st.session_state['nn_lasso_approximation'] = pd.DataFrame(
-                columns=mesurement_points)
-            st.session_state['nn_lasso_decomposition'] = []
-
+            st.session_state['Prop_nn_lasso'] = {}
             nb_it_total = 0
-
             start_time = time.time()
+
             for index, row in st.session_state['granulometrics'].iterrows():
                 # compute decomposition for our observation x_i
                 a_i, approx_i, it_i = decomposition_algo(row.to_numpy())
                 nb_it_total = nb_it_total + it_i
-                st.session_state['nn_lasso_approximation'].loc[index] = approx_i
+                st.session_state['X-X_hat-X_ref'].loc[f"dd-{index}"] = approx_i
 
                 # saving coefficient that are non-zero
-                coef_dict_i = {}
+                prop_dict_i = {}
+                sum_aera_i = 0.0
                 for i in range(a_i.shape[0]):
                     if a_i[i] > 0:
-                        coef_dict_i[st.session_state['discrete_dictionnary'].index[i]] = a_i[i]
-                st.session_state['nn_lasso_decomposition'].append(
-                    (index, coef_dict_i))
-            
+                        prop_dict_i[st.session_state['discrete_dictionnary'].index[i]
+                                    ] = a_i[i]*st.session_state['aeras_dd_curves'][i]
+                        sum_aera_i = sum_aera_i + \
+                            prop_dict_i[st.session_state['discrete_dictionnary'].index[i]]
+                for curve in prop_dict_i:
+                    prop_dict_i[curve] = prop_dict_i[curve]*100/sum_aera_i
+                st.session_state['Prop_nn_lasso'][index]=prop_dict_i
+
             end_time = time.time()
 
             mean_it = (1.0*nb_it_total)/len(st.session_state['granulometrics'])
             st.write(mean_it)
             st.write(f"Execution time : {end_time-start_time} seconds")
             st.success("Decomposition computed with success")
-            st.session_state['discrete_dictionnary_decomposition'] = True
+            st.session_state['dd_flag'] = True
 
 
 with tab_basic:
@@ -693,35 +700,53 @@ with tab_result:
         'r'))]
 
     # Selection of curves to plot
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.multiselect("labels of the observations to diplay",
                        options=labels_obs, key='selected_obs_labels')
     with col2:
-        st.multiselect("labels of the NMF approximations to diplay",
-                       options=labels_approx_nmf, key='selected_approx_nmf_labels')
+        st.checkbox("Display NMF-approximations", key='flag_nmf_approx', value=False,
+                    disabled=not st.session_state['nmf_flag'])
     with col3:
-        st.multiselect("labels of the reference curves approximations to diplay",
-                       options=labels_approx_rc, key='selected_approx_rc_labels')
+        st.checkbox("Display approximations with reference curves",
+                    key='flag_rc_approx', value=False, disabled=not st.session_state['rc_flag'])
+    with col4:
+        st.checkbox("Display approximations with discrete dictionnary (NN-LASSO)",
+                    key='flag_nnlasso_approx', value=False,  disabled=not st.session_state['dd_flag'])
 
     if st.session_state['nmf_flag']:
         st.subheader(
-            "Proportions of EM (NMF-approximations) for selected observations")
+            "Proportions of EM (NMF-approximations) for selected observation")
         st.dataframe(
             st.session_state['Prop_nmf'].loc[st.session_state['selected_obs_labels']])
 
     if st.session_state['rc_flag']:
         st.subheader(
-            "Proportions of reference curve (approximations) for selected observations")
+            "Proportions of reference curve (approximations) for selected observation")
         st.dataframe(
             st.session_state['Prop_rc'].loc[st.session_state['selected_obs_labels']])
 
+    if st.session_state['dd_flag']:
+        st.subheader(
+            "Proportions of curve in the discrete dicitonnary (approximations) for selected observation")
+        for label in st.session_state['selected_obs_labels']:
+            st.table(st.session_state['Prop_nn_lasso'][label])
+
     if st.button('Plots curves'):
-        curves_without_l1_rel_norm = st.session_state['X-X_hat-X_ref']
+        curves_and_approx = st.session_state['X-X_hat-X_ref']
         fig = go.Figure()
-        for label in st.session_state['selected_obs_labels']+st.session_state['selected_approx_nmf_labels']+st.session_state['selected_approx_rc_labels']:
-            fig.add_trace(go.Scatter(x=curves_without_l1_rel_norm.columns,
-                          y=curves_without_l1_rel_norm.loc[label], mode='lines', name=label))
+        for label in st.session_state['selected_obs_labels']:
+            fig.add_trace(go.Scatter(x=curves_and_approx.columns,
+                          y=curves_and_approx.loc[label], mode='lines', name=label))
+            if st.session_state['flag_nmf_approx']:
+                fig.add_trace(go.Scatter(x=curves_and_approx.columns,
+                                         y=curves_and_approx.loc[f"^{label}"], mode='lines', name=f"^{label}"))
+            if st.session_state['flag_rc_approx']:
+                fig.add_trace(go.Scatter(x=curves_and_approx.columns,
+                                         y=curves_and_approx.loc[f"r{label}"], mode='lines', name=f"r{label}"))
+            if st.session_state['flag_nnlasso_approx']:
+                fig.add_trace(go.Scatter(x=curves_and_approx.columns,
+                                         y=curves_and_approx.loc[f"dd-{label}"], mode='lines', name=f"dd-{label}"))
 
         fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
         fig.update_layout(
