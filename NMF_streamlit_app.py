@@ -296,18 +296,17 @@ with tab_discrete_dict:
                 u = rho(a, x)
                 cs = CS(a, u)
                 dg = DG(a, x, u)
-                st.write(f"cs : {cs}")
-                st.write(f"dg : {dg}")
+                #st.write(f"cs : {cs}")
+                #st.write(f"dg : {dg}")
                 return dg <= p_dg and cs <= p_cs
 
             # endregion
 
             if st.session_state["nn_lasso_method"] == "Frank-Wolfe":
 
-
                 def decomposition_algo(x):
                     a = np.zeros(M.shape[1])
-                    w = np.linalg.norm(x,2) ** 2 / (
+                    w = np.linalg.norm(x, 2) ** 2 / (
                         2 * st.session_state["lambda_nn_lasso"]
                     )
                     w_bar = w
@@ -315,18 +314,19 @@ with tab_discrete_dict:
 
                     # avoid to compute it every time
                     Mx = np.dot(M.T, x).reshape(a.shape)
-                    
-                    # case where || M^t x ||_infty <= lambda
-                    if np.max(np.abs(Mx)) <= st.session_state['lambda_nn_lasso']:
-                        return a, np.zeros(x.shape), it
 
+                    # case where || M^t x ||_infty <= lambda
+                    if np.max(np.abs(Mx)) <= st.session_state["lambda_nn_lasso"]:
+                        return a, np.zeros(x.shape), it
 
                     while not stop_criterions(a, x) and it < it_max:
 
-                        # STEP 1:
+                        # abbrevations
                         i_star = np.argmax(Mx - np.dot(MtM, a))
-                        m_i_star = M[:,i_star]
-                    
+                        m_i_star = M[:, i_star]
+                        r = x - np.dot(M, a)
+
+                        # STEP 1:
                         if (
                             np.max(np.abs(Mx - np.dot(MtM, a)))
                             <= st.session_state["lambda_nn_lasso"]
@@ -336,18 +336,20 @@ with tab_discrete_dict:
                         else:
                             canonic_vec = np.zeros(a.shape)
                             canonic_vec[i_star] = 1
-                            a_pre = canonic_vec * np.sign(np.dot(m_i_star,x-np.dot(M,a))) * w_bar
+                            a_pre = canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar
                             w_pre = w_bar
 
                         # STEP2:
-                        v = m_i_star * np.sign(np.dot(m_i_star,x-np.dot(M,a))) * w_pre - np.dot(M, a)
+                        v = m_i_star * np.sign(np.dot(m_i_star, r)) * w_pre - np.dot(
+                            M, a
+                        )
                         gamma_pre = (
-                            np.dot(v, x - np.dot(M, a))
+                            np.dot(v, r)
                             + st.session_state["lambda_nn_lasso"] * (w - w_pre)
                         ) / (np.linalg.norm(v, 2) ** 2)
                         if gamma_pre < 0:
                             gamma = 0
-                        elif gamma_pre > 0:
+                        elif gamma_pre > 1:
                             gamma = 1
                         else:
                             gamma = gamma_pre
@@ -355,7 +357,9 @@ with tab_discrete_dict:
                         # STEP3:
                         a = gamma * a_pre + (1 - gamma) * a
                         w = gamma * w_pre + (1 - gamma) * w
-                        w_bar = np.min([w_bar, f(a, x)/st.session_state['lambda_nn_lasso']])
+                        w_bar = np.min(
+                            [w_bar, f(a, x) / st.session_state["lambda_nn_lasso"]]
+                        )
 
                         it += 1
 
