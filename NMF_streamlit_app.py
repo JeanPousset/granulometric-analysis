@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import NMF
 import plotly.graph_objects as go
 import cvxpy as cp
+from multiprocessing import Pool
+from functools import partial
+
 
 # from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm
 from plotly.subplots import make_subplots
@@ -172,16 +175,16 @@ with tab_discrete_dict:
                      are several methods we can use. Please select bellow wich one you want."""
         )
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns([2, 2, 1.5])
 
         with col1:
             st.selectbox(
-                "Choose the resolution method",
+                label = "Choose the resolution method",
                 options=[
+                    "Proximal Gradient with backtracking iteration",
                     "Proximal Gradient with constant step-size iteration",
                     "Frank-Wolfe",
-                    "Projected gradient",
-                    "Proximal Gradient with backtracking iteration",
+                    "Projected gradient"
                 ],
                 key="nn_lasso_method",
             )
@@ -189,10 +192,12 @@ with tab_discrete_dict:
             st.number_input(
                 "Coefficient of penalization (lambda)",
                 key="lambda_nn_lasso",
-                value=5.0,
+                value=50.0,
                 min_value=0.0,
                 step=1.0,
             )
+        with col3:
+            st.checkbox("Parallelization", key="flag_paral")
 
         if st.button("Run decomposition"):
 
@@ -258,57 +263,56 @@ with tab_discrete_dict:
 
             M = np.transpose(st.session_state["discrete_dictionnary"].to_numpy())
             # hyper-parameters
-            prec = 1e-1
-            p_dg = 1e-1
-            p_cs = 1e-1
+            p_dg = 10e-0
+            p_cs = 10e-0
             it_max = 1e5
             MtM = np.dot(M.T, M)  # saving result to optimize
+            eta = 1.5
             # Lipschitz constant of our objective function
             L = np.real(np.max(np.linalg.eigvals(MtM)))
 
             # Objective function
-            def f(a, x):
+            def f(a, x, lambda_):
                 return 0.5 * np.linalg.norm(
                     x - np.dot(M, a), 2
-                ) ** 2 + st.session_state["lambda_nn_lasso"] * np.linalg.norm(a, 1)
+                ) ** 2 + lambda_ * np.linalg.norm(a, 1)
 
+            # hat objective function
+            def f_hat(a1,a,x,lambda_):
+                return 0.5*np.linalg.norm(x-np.dot(M,a),2)**2+np.dot(a1-a,np.dot(MtM,a)-np.dot(M.T,x))+1/(2*lambda_)*np.linalg.norm(a1-a,2)**2
             # region Stop-criterions functions
-            def rho(a, x):
+            def rho(a, x, lambda_):
                 return (
-                    st.session_state["lambda_nn_lasso"]
+                    lambda_
                     * (x - np.dot(M, a))
                     / np.max(np.abs(np.dot(M.T, x) - np.dot(MtM, a)))
                 )
 
-            def CS(a, u):
-                return st.session_state["lambda_nn_lasso"] * np.linalg.norm(
-                    a, 1
-                ) - np.dot(np.dot(M.T, u), a)
+            def CS(a, u, lambda_):
+                return lambda_ * np.linalg.norm(a, 1) - np.dot(np.dot(M.T, u), a)
 
-            def DG(a, x, u):
+            def DG(a, x, u, lambda_):
                 return (
                     0.5 * np.linalg.norm(x - np.dot(M, a), 2) ** 2
-                    + st.session_state["lambda_nn_lasso"] * np.linalg.norm(a, 1)
+                    + lambda_ * np.linalg.norm(a, 1)
                     + 0.5 * (np.linalg.norm(x - u, 2) ** 2 - np.linalg.norm(x, 2) ** 2)
                 )
 
-            def stop_criterions(a, x):
-                u = rho(a, x)
-                cs = CS(a, u)
-                dg = DG(a, x, u)
-                #st.write(f"cs : {cs}")
-                #st.write(f"dg : {dg}")
+            def stop_criterions(a, x, lambda_):
+                u = rho(a, x, lambda_)
+                cs = CS(a, u, lambda_)
+                dg = DG(a, x, u, lambda_)
+                # st.write(f"cs : {cs}")
+                # st.write(f"dg : {dg}")
                 return dg <= p_dg and cs <= p_cs
 
             # endregion
 
             if st.session_state["nn_lasso_method"] == "Frank-Wolfe":
 
-                def decomposition_algo(x):
+                def decomposition_algo(x, lambda_):
                     a = np.zeros(M.shape[1])
-                    w = np.linalg.norm(x, 2) ** 2 / (
-                        2 * st.session_state["lambda_nn_lasso"]
-                    )
+                    w = np.linalg.norm(x, 2) ** 2 / (2 * lambda_)
                     w_bar = w
                     it = 0
 
@@ -316,10 +320,10 @@ with tab_discrete_dict:
                     Mx = np.dot(M.T, x).reshape(a.shape)
 
                     # case where || M^t x ||_infty <= lambda
-                    if np.max(np.abs(Mx)) <= st.session_state["lambda_nn_lasso"]:
+                    if np.max(np.abs(Mx)) <= lambda_:
                         return a, np.zeros(x.shape), it
 
-                    while not stop_criterions(a, x) and it < it_max:
+                    while not stop_criterions(a, x, lambda_) and it < it_max:
 
                         # abbrevations
                         i_star = np.argmax(Mx - np.dot(MtM, a))
@@ -327,10 +331,7 @@ with tab_discrete_dict:
                         r = x - np.dot(M, a)
 
                         # STEP 1:
-                        if (
-                            np.max(np.abs(Mx - np.dot(MtM, a)))
-                            <= st.session_state["lambda_nn_lasso"]
-                        ):
+                        if np.max(np.abs(Mx - np.dot(MtM, a))) <= lambda_:
                             a_pre = np.zeros(a.shape)
                             w_pre = 0
                         else:
@@ -343,10 +344,9 @@ with tab_discrete_dict:
                         v = m_i_star * np.sign(np.dot(m_i_star, r)) * w_pre - np.dot(
                             M, a
                         )
-                        gamma_pre = (
-                            np.dot(v, r)
-                            + st.session_state["lambda_nn_lasso"] * (w - w_pre)
-                        ) / (np.linalg.norm(v, 2) ** 2)
+                        gamma_pre = (np.dot(v, r) + lambda_ * (w - w_pre)) / (
+                            np.linalg.norm(v, 2) ** 2
+                        )
                         if gamma_pre < 0:
                             gamma = 0
                         elif gamma_pre > 1:
@@ -357,9 +357,7 @@ with tab_discrete_dict:
                         # STEP3:
                         a = gamma * a_pre + (1 - gamma) * a
                         w = gamma * w_pre + (1 - gamma) * w
-                        w_bar = np.min(
-                            [w_bar, f(a, x) / st.session_state["lambda_nn_lasso"]]
-                        )
+                        w_bar = np.min([w_bar, f(a, x, lambda_) / lambda_])
 
                         it += 1
 
@@ -370,24 +368,52 @@ with tab_discrete_dict:
                     # argmin, approx, and nb of iterations
                     return a, np.dot(M, a).flatten(), it
 
+            if st.session_state['nn_lasso_method'] == "Proximal Gradient with backtracking iteration":
+                
+                def decomposition_algo(x, lambda_):
+                    a = np.zeros(M.shape[1])
+                    L = 1 # initialization of L
+                    
+                    Mx = np.dot(M.T, x).reshape(a.shape)
+                    Lambda = np.full((a.shape), lambda_)
+                    it = 0
+
+                    def prox_l1(z):
+                        return np.sign(z) * np.maximum(np.abs(z) - Lambda / L, 0)
+
+                    while not stop_criterions(a, x, lambda_) and it < it_max:
+                        a1 = prox_l1(a - 1 / L * (np.dot(MtM, a) - Mx))
+                        while f(a1,x,lambda_) > f_hat(a1,a,x,lambda_):
+                            L = eta*L
+                            a1 = prox_l1(a - 1 / L * (np.dot(MtM, a) - Mx))
+                            
+                        a = a1
+                        it += 1
+
+                    if it == it_max:
+                        st.warning("Non-convergence for projected gradient method")
+
+                    # argmin, approx, and nb of iterations
+                    return a, np.dot(M, a).flatten(), it
+
+
             if st.session_state["nn_lasso_method"] == "Projected gradient":
 
-                def decomposition_algo(x):
-                    a = np.random.rand(M.shape[1])
+                def decomposition_algo(x, lambda_):
+                    a = np.zeros(M.shape[1])
 
                     # saving result to re_use it at each iterations
                     Mx = np.dot(M.T, x).reshape(a.shape)
                     # each element of the vector is the penalization value
-                    Lambda = np.full((a.shape), st.session_state["lambda_nn_lasso"])
-                    err = prec + 1
+                    Lambda = np.full((a.shape), lambda_)
                     it = 0
 
-                    while err > prec and it < it_max:
+                    while not stop_criterions(a, x, lambda_) and it < it_max:
                         a1 = np.maximum(0, a - 1 / L * (np.dot(MtM, a) - Mx + Lambda))
                         # st.write(a1)
                         err = np.linalg.norm(a1 - a)
                         a = a1.copy()
-                        it = it + 1
+                        it += 1
 
                     if it == it_max:
                         fegh = 3
@@ -396,30 +422,25 @@ with tab_discrete_dict:
                     # argmin, approx, and nb of iterations
                     return a, np.dot(M, a).flatten(), it
 
-            if (
-                st.session_state["nn_lasso_method"]
-                == "Proximal Gradient with constant step-size iteration"
-            ):
+            if st.session_state["nn_lasso_method"] == "Proximal Gradient with constant step-size iteration":
 
-                def decomposition_algo(x):
-                    a = np.random.rand(M.shape[1])
+                def decomposition_algo(x, lambda_):
+                    a = np.zeros(M.shape[1])
 
                     # saving result to re_use it at each iterations
                     Mx = np.dot(M.T, x).reshape(a.shape)
                     # each element of the vector is the penalization value
-                    Lambda = np.full((a.shape), st.session_state["lambda_nn_lasso"])
-                    err = prec + 1
+                    Lambda = np.full((a.shape), lambda_)
                     it = 0
 
                     def prox_l1(z):
                         return np.sign(z) * np.maximum(np.abs(z) - Lambda / L, 0)
 
-                    while err > prec and it < it_max:
+                    while not stop_criterions(a, x, lambda_) and it < it_max:
                         a1 = prox_l1(a - 1 / L * (np.dot(MtM, a) - Mx))
                         err = np.linalg.norm(a1 - a)
                         a = a1.copy()
-
-                        it = it + 1
+                        it += 1
 
                     if it == it_max:
                         st.warning("Non-convergence for projected gradient method")
@@ -430,39 +451,77 @@ with tab_discrete_dict:
             # endregion
 
             # region Decomposition
-            st.session_state["Prop_nn_lasso"] = {}
-            nb_it_total = 0
-            start_time = time.time()
 
-            for index, row in st.session_state["granulometrics"].iterrows():
-                # compute decomposition for our observation x_i
-                a_i, approx_i, it_i = decomposition_algo(row.to_numpy())
-                nb_it_total = nb_it_total + it_i
-                st.session_state["X-X_hat-X_ref"].loc[f"dd-{index}"] = approx_i
+            if st.session_state["flag_paral"]:
+                # def decomposition(iterrow, aera_curves, index_dd, lambda_):
+                #     index, row = iterrow
+                #     print(index)
+                #     # compute decomposition for our observation x_i
+                #     a_i, approx_i, it_i = decomposition_algo(row.to_numpy(), lambda_)
+                #     nb_it_total = nb_it_total + it_i
 
-                # saving coefficient that are non-zero
-                prop_dict_i = {}
-                sum_aera_i = 0.0
-                for i in range(a_i.shape[0]):
-                    if a_i[i] > 0:
-                        prop_dict_i[
-                            st.session_state["discrete_dictionnary"].index[i]
-                        ] = (a_i[i] * st.session_state["aeras_dd_curves"][i])
-                        sum_aera_i = (
-                            sum_aera_i
-                            + prop_dict_i[
+                #     # saving coefficient that are non-zero
+                #     prop_dict_i = {}
+                #     sum_aera_i = 0.0
+                #     for i in range(a_i.shape[0]):
+                #         if a_i[i] > 0:
+                #             prop_dict_i[index_dd[i]] = a_i[i] * aera_curves[i]
+                #             sum_aera_i = sum_aera_i + prop_dict_i[index_dd[i]]
+                #     for curve in prop_dict_i:
+                #         prop_dict_i[curve] = prop_dict_i[curve] * 100 / sum_aera_i
+                #     return prop_dict_i, approx_i, index
+
+                # partial_decomposition = partial(
+                #     decomposition,
+                #     aera_curves=st.session_state["aeras_dd_curves"].copy(),
+                #     index_dd=st.session_state["discrete_dictionnary"].index.copy(),
+                #     lambda_=st.session_state["lambda_nn_lasso"],
+                # )
+
+                # # parallelization of the decomposition
+                # if __name__ == "__main__":
+                #     with Pool() as pool:
+                #         data_copy = st.session_state["granulometrics"].copy()
+                #         results = pool.imap(partial_decomposition, data_copy.iterrows())
+                #         for prop_dict_i, approx_i, index in results:
+                #             st.write(index)
+                None
+            else:
+                st.session_state["Prop_nn_lasso"] = {}
+                nb_it_total = 0
+                start_time = time.time()
+
+                for index, row in st.session_state["granulometrics"].iterrows():
+                    # compute decomposition for our observation x_i
+                    a_i, approx_i, it_i = decomposition_algo(
+                        row.to_numpy(), st.session_state["lambda_nn_lasso"]
+                    )
+                    nb_it_total = nb_it_total + it_i
+                    st.session_state["X-X_hat-X_ref"].loc[f"dd-{index}"] = approx_i
+
+                    # saving coefficient that are non-zero
+                    prop_dict_i = {}
+                    sum_aera_i = 0.0
+                    for i in range(a_i.shape[0]):
+                        if a_i[i] > 0:
+                            prop_dict_i[
                                 st.session_state["discrete_dictionnary"].index[i]
-                            ]
-                        )
-                for curve in prop_dict_i:
-                    prop_dict_i[curve] = prop_dict_i[curve] * 100 / sum_aera_i
-                st.session_state["Prop_nn_lasso"][index] = prop_dict_i
+                            ] = (a_i[i] * st.session_state["aeras_dd_curves"][i])
+                            sum_aera_i = (
+                                sum_aera_i
+                                + prop_dict_i[
+                                    st.session_state["discrete_dictionnary"].index[i]
+                                ]
+                            )
+                    for curve in prop_dict_i:
+                        prop_dict_i[curve] = prop_dict_i[curve] * 100 / sum_aera_i
+                    st.session_state["Prop_nn_lasso"][index] = prop_dict_i
 
-            end_time = time.time()
+                end_time = time.time()
 
             mean_it = (1.0 * nb_it_total) / len(st.session_state["granulometrics"])
             st.write(mean_it)
-            st.write(f"Execution time : {end_time-start_time} seconds")
+            st.write(f"Execution time : {end_time-start_time:.2f} seconds")
             # endregion
 
             st.success("Decomposition computed with success")
