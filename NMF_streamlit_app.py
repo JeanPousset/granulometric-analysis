@@ -175,7 +175,7 @@ with tab_discrete_dict:
                      are several methods we can use. Please select bellow wich one you want."""
         )
 
-        col1, col2, col3 = st.columns([2, 2, 1.5])
+        col1, col2, col3, col4 = st.columns(4)
 
         with col1:
             st.selectbox(
@@ -198,7 +198,9 @@ with tab_discrete_dict:
                 step=1.0,
             )
         with col3:
-            st.checkbox("Parallelization", key="flag_paral")
+            st.number_input("Precision for dual gap",key = 'p_dg',value = 10.0)
+        with col4:
+            st.number_input("Precision for complementary slackness",key = 'p_cs',value = 10.0)
 
         if st.button("Run decomposition"):
 
@@ -314,7 +316,7 @@ with tab_discrete_dict:
                 dg = DG(a, x, u, lambda_)
                 # st.write(f"cs : {cs}")
                 # st.write(f"dg : {dg}")
-                return dg <= p_dg and cs <= p_cs
+                return dg <= st.session_state['p_dg'] and cs <= dg <= st.session_state['p_cs']
 
             # endregion
 
@@ -520,80 +522,45 @@ with tab_discrete_dict:
 
             # region Decomposition
 
-            if st.session_state["flag_paral"]:
-                # def decomposition(iterrow, aera_curves, index_dd, lambda_):
-                #     index, row = iterrow
-                #     print(index)
-                #     # compute decomposition for our observation x_i
-                #     a_i, approx_i, it_i = decomposition_algo(row.to_numpy(), lambda_)
-                #     nb_it_total = nb_it_total + it_i
+            st.session_state["Prop_nn_lasso"] = {}
+            nb_it_total = 0
+            start_time = time.time()
 
-                #     # saving coefficient that are non-zero
-                #     prop_dict_i = {}
-                #     sum_aera_i = 0.0
-                #     for i in range(a_i.shape[0]):
-                #         if a_i[i] > 0:
-                #             prop_dict_i[index_dd[i]] = a_i[i] * aera_curves[i]
-                #             sum_aera_i = sum_aera_i + prop_dict_i[index_dd[i]]
-                #     for curve in prop_dict_i:
-                #         prop_dict_i[curve] = prop_dict_i[curve] * 100 / sum_aera_i
-                #     return prop_dict_i, approx_i, index
-
-                # partial_decomposition = partial(
-                #     decomposition,
-                #     aera_curves=st.session_state["aeras_dd_curves"].copy(),
-                #     index_dd=st.session_state["discrete_dictionnary"].index.copy(),
-                #     lambda_=st.session_state["lambda_nn_lasso"],
-                # )
-
-                # # parallelization of the decomposition
-                # if __name__ == "__main__":
-                #     with Pool() as pool:
-                #         data_copy = st.session_state["granulometrics"].copy()
-                #         results = pool.imap(partial_decomposition, data_copy.iterrows())
-                #         for prop_dict_i, approx_i, index in results:
-                #             st.write(index)
-                None
-            else:
-                st.session_state["Prop_nn_lasso"] = {}
-                nb_it_total = 0
-                start_time = time.time()
-
-                compute_advancement = st.empty()
-                k = 1
-                nb_curves = len(st.session_state["granulometrics"])
-                for index, row in st.session_state["granulometrics"].iterrows():
-                    with compute_advancement.container():
-                        st.write(
-                            f"approximation ({k} over {nb_curves}) -> sample : {index} "
-                        )
-                    # compute decomposition for our observation x_i
-                    a_i, approx_i, it_i = decomposition_algo(
-                        row.to_numpy(), st.session_state["lambda_nn_lasso"]
+            compute_advancement = st.empty()
+            k = 1
+            nb_curves = len(st.session_state["granulometrics"])
+            for index, row in st.session_state["granulometrics"].iterrows():
+                with compute_advancement.container():
+                    st.write(
+                        f"approximation ({k} over {nb_curves}) -> sample : {index} "
                     )
-                    nb_it_total += it_i
-                    st.session_state["X-X_hat-X_ref"].loc[f"dd-{index}"] = approx_i
+                # compute decomposition for our observation x_i
+                a_i, approx_i, it_i = decomposition_algo(
+                    row.to_numpy(), st.session_state["lambda_nn_lasso"]
+                )
+                nb_it_total += it_i
+                st.session_state["X-X_hat-X_ref"].loc[f"dd-{index}"] = approx_i
 
-                    # saving coefficient that are non-zero
-                    prop_dict_i = {}
-                    sum_aera_i = 0.0
-                    for i in range(a_i.shape[0]):
-                        if a_i[i] != 0:
-                            prop_dict_i[
+                # saving coefficient that are non-zero
+                prop_dict_i = {}
+                sum_aera_i = 0.0
+                for i in range(a_i.shape[0]):
+                    if a_i[i] != 0:
+                        prop_dict_i[
+                            st.session_state["discrete_dictionnary"].index[i]
+                        ] = (a_i[i] * st.session_state["aeras_dd_curves"][i])
+                        sum_aera_i = (
+                            sum_aera_i
+                            + prop_dict_i[
                                 st.session_state["discrete_dictionnary"].index[i]
-                            ] = (a_i[i] * st.session_state["aeras_dd_curves"][i])
-                            sum_aera_i = (
-                                sum_aera_i
-                                + prop_dict_i[
-                                    st.session_state["discrete_dictionnary"].index[i]
-                                ]
-                            )
-                    for curve in prop_dict_i:
-                        prop_dict_i[curve] = prop_dict_i[curve] * 100 / sum_aera_i
-                    st.session_state["Prop_nn_lasso"][index] = prop_dict_i
-                    k += 1
+                            ]
+                        )
+                for curve in prop_dict_i:
+                    prop_dict_i[curve] = prop_dict_i[curve] * 100 / sum_aera_i
+                st.session_state["Prop_nn_lasso"][index] = prop_dict_i
+                k += 1
 
-                end_time = time.time()
+            end_time = time.time()
 
             mean_it = (1.0 * nb_it_total) / len(st.session_state["granulometrics"])
             with compute_advancement.container():
