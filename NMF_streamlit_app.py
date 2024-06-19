@@ -179,12 +179,12 @@ with tab_discrete_dict:
 
         with col1:
             st.selectbox(
-                label = "Choose the resolution method",
+                label="Choose the resolution method",
                 options=[
                     "Proximal Gradient with backtracking iteration",
                     "Proximal Gradient with constant step-size iteration",
                     "Frank-Wolfe",
-                    "Projected gradient"
+                    "Projected gradient",
                 ],
                 key="nn_lasso_method",
             )
@@ -263,11 +263,11 @@ with tab_discrete_dict:
 
             M = np.transpose(st.session_state["discrete_dictionnary"].to_numpy())
             # hyper-parameters
-            p_dg = 10e-0
-            p_cs = 10e-0
+            p_dg = 1
+            p_cs = 1
             it_max = 1e5
             MtM = np.dot(M.T, M)  # saving result to optimize
-            eta = 1.5
+            eta = 2
             # Lipschitz constant of our objective function
             L = np.real(np.max(np.linalg.eigvals(MtM)))
 
@@ -277,9 +277,18 @@ with tab_discrete_dict:
                     x - np.dot(M, a), 2
                 ) ** 2 + lambda_ * np.linalg.norm(a, 1)
 
+            def h(a, x):
+                return 0.5 * np.linalg.norm(x - np.dot(M, a), 2) ** 2
+
             # hat objective function
-            def f_hat(a1,a,x,lambda_):
-                return 0.5*np.linalg.norm(x-np.dot(M,a),2)**2+np.dot(a1-a,np.dot(MtM,a)-np.dot(M.T,x))+1/(2*lambda_)*np.linalg.norm(a1-a,2)**2
+            def f_hat(a1, a, x, lambda_):
+                # return 0.5*np.linalg.norm(x-np.dot(M,a),2)**2+np.dot(a1-a,np.dot(MtM,a)-np.dot(M.T,x))+1/(2*lambda_)*np.linalg.norm(a1-a,2)**2
+                return (
+                    f(a, x, lambda_)
+                    + np.dot(np.dot(MtM, a) - np.dot(M.T, x), a1 - a)
+                    #+ 1 / (2 * lambda_) * np.linalg.norm(a1 - a, 2) ** 2
+                )
+
             # region Stop-criterions functions
             def rho(a, x, lambda_):
                 return (
@@ -368,25 +377,29 @@ with tab_discrete_dict:
                     # argmin, approx, and nb of iterations
                     return a, np.dot(M, a).flatten(), it
 
-            if st.session_state['nn_lasso_method'] == "Proximal Gradient with backtracking iteration":
-                
+            if (
+                st.session_state["nn_lasso_method"]
+                == "Proximal Gradient with backtracking iteration"
+            ):
+
                 def decomposition_algo(x, lambda_):
                     a = np.zeros(M.shape[1])
-                    L = 1 # initialization of L
-                    
                     Mx = np.dot(M.T, x).reshape(a.shape)
-                    Lambda = np.full((a.shape), lambda_)
                     it = 0
+                    Li = 1
 
-                    def prox_l1(z):
-                        return np.sign(z) * np.maximum(np.abs(z) - Lambda / L, 0)
+                    def prox_l1(z, t):
+                        return np.sign(z) * np.maximum(
+                            np.abs(z) - np.full(z.shape, t), np.full(z.shape, 0)
+                        )
 
                     while not stop_criterions(a, x, lambda_) and it < it_max:
-                        a1 = prox_l1(a - 1 / L * (np.dot(MtM, a) - Mx))
-                        while f(a1,x,lambda_) > f_hat(a1,a,x,lambda_):
-                            L = eta*L
-                            a1 = prox_l1(a - 1 / L * (np.dot(MtM, a) - Mx))
-                            
+                        a1 = prox_l1(a - (np.dot(MtM, a) - Mx) / Li, lambda_ / Li)
+                        while f(a1, x, lambda_) > f_hat(a1, a, x, lambda_):
+                            # st.write(f"Multplying Li by {eta}")
+                            Li = eta * Li
+                            a1 = prox_l1(a - (np.dot(MtM, a) - Mx) / Li, lambda_ / Li)
+                        st.write(f"{Li = }")
                         a = a1
                         it += 1
 
@@ -395,7 +408,6 @@ with tab_discrete_dict:
 
                     # argmin, approx, and nb of iterations
                     return a, np.dot(M, a).flatten(), it
-
 
             if st.session_state["nn_lasso_method"] == "Projected gradient":
 
@@ -422,7 +434,10 @@ with tab_discrete_dict:
                     # argmin, approx, and nb of iterations
                     return a, np.dot(M, a).flatten(), it
 
-            if st.session_state["nn_lasso_method"] == "Proximal Gradient with constant step-size iteration":
+            if (
+                st.session_state["nn_lasso_method"]
+                == "Proximal Gradient with constant step-size iteration"
+            ):
 
                 def decomposition_algo(x, lambda_):
                     a = np.zeros(M.shape[1])
@@ -430,16 +445,16 @@ with tab_discrete_dict:
                     # saving result to re_use it at each iterations
                     Mx = np.dot(M.T, x).reshape(a.shape)
                     # each element of the vector is the penalization value
-                    Lambda = np.full((a.shape), lambda_)
                     it = 0
 
-                    def prox_l1(z):
-                        return np.sign(z) * np.maximum(np.abs(z) - Lambda / L, 0)
+                    def prox_l1(z, t):
+                        return np.sign(z) * np.maximum(
+                            np.abs(z) - np.full(z.shape, t), np.full(z.shape, 0)
+                        )
 
                     while not stop_criterions(a, x, lambda_) and it < it_max:
-                        a1 = prox_l1(a - 1 / L * (np.dot(MtM, a) - Mx))
-                        err = np.linalg.norm(a1 - a)
-                        a = a1.copy()
+                        a1 = prox_l1(a - (np.dot(MtM, a) - Mx) / L, lambda_ / L)
+                        a = a1
                         it += 1
 
                     if it == it_max:
@@ -491,7 +506,14 @@ with tab_discrete_dict:
                 nb_it_total = 0
                 start_time = time.time()
 
+                compute_advancement = st.empty()
+                k = 1
+                nb_curves = len(st.session_state["granulometrics"])
                 for index, row in st.session_state["granulometrics"].iterrows():
+                    with compute_advancement.container():
+                        st.write(
+                            f"approximation ({k} over {nb_curves}) -> sample : {index} "
+                        )
                     # compute decomposition for our observation x_i
                     a_i, approx_i, it_i = decomposition_algo(
                         row.to_numpy(), st.session_state["lambda_nn_lasso"]
@@ -516,6 +538,7 @@ with tab_discrete_dict:
                     for curve in prop_dict_i:
                         prop_dict_i[curve] = prop_dict_i[curve] * 100 / sum_aera_i
                     st.session_state["Prop_nn_lasso"][index] = prop_dict_i
+                    k += 1
 
                 end_time = time.time()
 
