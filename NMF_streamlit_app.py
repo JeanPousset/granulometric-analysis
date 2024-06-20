@@ -174,21 +174,20 @@ with tab_discrete_dict:
                     We reconize here a LASSO problem except that the variable $a$ is non-negative. For this kind of problem (NN-LASSO), there
                      are several methods we can use. Please select bellow wich one you want."""
         )
+        st.selectbox(
+            label="Choose the resolution method",
+            options=[
+                "Frank-Wolfe",
+                "FISTA with backtracking",
+                "Proximal Gradient with backtracking",
+                "Proximal Gradient with constant step-size",
+                "Projected gradient",
+            ],
+            key="nn_lasso_method",
+        )
 
-        col1, col2, col3, col4 = st.columns(4)
+        col2, col3, col4 = st.columns([2, 1, 2])
 
-        with col1:
-            st.selectbox(
-                label="Choose the resolution method",
-                options=[
-                    "Frank-Wolfe",
-                    "FISTA with backtracking",
-                    "Proximal Gradient with backtracking",
-                    "Proximal Gradient with constant step-size",
-                    "Projected gradient",
-                ],
-                key="nn_lasso_method",
-            )
         with col2:
             st.number_input(
                 "Coefficient of penalization (lambda)",
@@ -198,9 +197,11 @@ with tab_discrete_dict:
                 step=1.0,
             )
         with col3:
-            st.number_input("Precision for dual gap",key = 'p_dg',value = 10.0)
+            st.number_input("Precision for dual gap", key="p_dg", value=10.0)
         with col4:
-            st.number_input("Precision for complementary slackness",key = 'p_cs',value = 10.0)
+            st.number_input(
+                "Precision for complementary slackness", key="p_cs", value=10.0
+            )
 
         if st.button("Run decomposition"):
 
@@ -272,7 +273,7 @@ with tab_discrete_dict:
             MtM = np.dot(M.T, M)  # saving result to optimize
             eta = 2
             # Lipschitz constant of our objective function
-            L = 2*np.real(np.max(np.linalg.eigvals(MtM)))
+            L = 2 * np.real(np.max(np.linalg.eigvals(MtM)))
 
             # Objective function
             def f_global(a, x_, lambda_):
@@ -316,7 +317,10 @@ with tab_discrete_dict:
                 dg = DG(a, x, u, lambda_)
                 # st.write(f"cs : {cs}")
                 # st.write(f"dg : {dg}")
-                return dg <= st.session_state['p_dg'] and cs <= dg <= st.session_state['p_cs']
+                return (
+                    dg <= st.session_state["p_dg"]
+                    and cs <= dg <= st.session_state["p_cs"]
+                )
 
             # endregion
 
@@ -324,17 +328,17 @@ with tab_discrete_dict:
 
                 def decomposition_algo(x, lambda_):
 
-                    # Initialization 
+                    # Initialization
                     a = np.zeros(M.shape[1])
                     z = a
                     it = 0
-                    Li = L # Lipschitz constant of ||x-Ma||2
+                    Li = L  # Lipschitz constant of ||x-Ma||2
                     eta = 2
                     t = 1
 
                     Mx = np.dot(M.T, x).reshape(a.shape)
                     f = partial(f_global, x_=x, lambda_=lambda_)
-                    
+
                     def q(a, z, l):
                         return (
                             f(z)
@@ -342,7 +346,7 @@ with tab_discrete_dict:
                             + 0.5 * l * np.linalg.norm(a - z, 2) ** 2
                             + lambda_ * np.linalg.norm(a, 1)
                         )
-                    
+
                     # Fonction of the l1_prox of a-gradh(a)
                     # also the argmin of the approximation of F(x) at the given point y
                     def p_L(a, l):
@@ -351,8 +355,6 @@ with tab_discrete_dict:
                             np.abs(z) - np.full(z.shape, lambda_ / l),
                             np.full(z.shape, 0),
                         )
-                    
-                    
 
                     while not stop_criterions(a, x, lambda_) and it < it_max:
                         a1 = p_L(z, Li)
@@ -360,8 +362,8 @@ with tab_discrete_dict:
                             Li = eta * Li
                             a1 = p_L(z, Li)
                         t1 = 0.5 * (1 + np.sqrt(1 + 4 * (t**2)))
-                        z = a1 + (t-1)/t1 * (a1-a)
-                        a = a1 # update of a
+                        z = a1 + (t - 1) / t1 * (a1 - a)
+                        a = a1  # update of a
                         it += 1
 
                     if it == it_max:
@@ -567,10 +569,9 @@ with tab_discrete_dict:
                 st.success("Decomposition computed with success")
                 st.write(f"mean of iteration number : {mean_it}")
                 st.write(f"Execution time : {end_time-start_time:.2f} seconds")
-            
+
             st.session_state["dd_flag"] = True
-            # endregion   
-            
+            # endregion
 
 
 with tab_basic:
