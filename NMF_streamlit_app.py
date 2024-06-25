@@ -643,7 +643,7 @@ with tab_basic:
                 alpha_W=st.session_state["a_W"],
                 alpha_H=st.session_state["a_H"],
                 random_state=0,
-                tol = 1e-10,
+                tol = 1e-6,
                 max_iter=15000,
             )
             # Increase max_iter to get convergence
