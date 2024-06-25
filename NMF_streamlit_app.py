@@ -586,7 +586,7 @@ with tab_basic:
         )
         st.latex(
             r"""
-                \Vert X-MA\Vert^2_{\beta-loss}+2l_{1_\text{ratio}}\left(\alpha_M m\Vert M \Vert_1 +\alpha_A n\Vert A \Vert_1 \right)+(1-l_1{_\text{ratio}})\left(\alpha_M m\Vert M \Vert_F^2 +\alpha_A n\Vert A \Vert_F^2 \right)
+                \Vert X-AM\Vert^2_{\beta-loss}+2l_{1_\text{ratio}}\left(\alpha_M m\Vert M \Vert_1 +\alpha_A n\Vert A \Vert_1 \right)+(1-l_1{_\text{ratio}})\left(\alpha_M m\Vert M \Vert_F^2 +\alpha_A n\Vert A \Vert_F^2 \right)
                 """
         )
 
@@ -610,14 +610,16 @@ with tab_basic:
             )
 
         with col2:
-            loss_choice = st.selectbox("Beta_loss :", ("Frobenius", "kullback-leibler"))
-            if loss_choice == "kullback-leibler":
+            loss_choice = st.selectbox("Beta_loss :", ("Frobenius (CD)","Frobenius (MU)","Kullback-Leibler (MU)"))
+            if loss_choice == "Kullback-Leibler (MU)":
                 st.session_state["loss"] = "kullback-leibler"
                 st.session_state["solver"] = "mu"
-
+            elif loss_choice == "Frobenius (CD)":
+                st.session_state["loss"] = "frobenius"
+                st.session_state["solver"] = "cd"    
             else:
                 st.session_state["loss"] = "frobenius"
-                st.session_state["solver"] = "cd"
+                st.session_state["solver"] = "mu"
 
         with col3:
             st.number_input(
@@ -641,6 +643,7 @@ with tab_basic:
                 alpha_W=st.session_state["a_W"],
                 alpha_H=st.session_state["a_H"],
                 random_state=0,
+                tol = 1e-10,
                 max_iter=15000,
             )
             # Increase max_iter to get convergence
