@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import time
+import json
 import random
 import matplotlib.pyplot as plt
 from sklearn.decomposition import NMF
@@ -20,7 +21,7 @@ sys.path.append("..")
 st.set_page_config(page_title="NMF test", layout="wide")
 
 
-st.title("Comparaison of differents NMF")
+st.title("Methods for gromulometric analysis")
 
 
 # data_granulometry_03_06_24
@@ -45,6 +46,8 @@ if "granulometrics" not in st.session_state:
     st.session_state["granulometrics"] = data
 
 # region initialisation of session variables
+if "flag_comparaison_curves_importation" not in st.session_state:
+    st.session_state["flag_comparaison_curves_importation"] = False
 if "dd_flag" not in st.session_state:
     st.session_state["dd_flag"] = False
 if "nb_end_members" not in st.session_state:
@@ -146,14 +149,102 @@ materials = {
 # endregion
 
 
-tab_discrete_dict, tab_basic, tab_ref_expert, tab_result = st.tabs(
+tab_continous_dict, tab_discrete_dict, tab_basic, tab_ref_expert, tab_result = st.tabs(
     [
+        "Continuous dictionary",
         "Discrete dictionnary",
         "Basic NMF (with penalization)",
         "Experimental references",
         "Results",
     ]
 )
+
+with tab_continous_dict:
+    col01, col02, col03 = st.columns([1, 3, 1])
+    with col02:
+        st.header("Decomposition onto a continuous dictionnary")
+        st.subheader("Graphique exemple of the method's interest")
+
+        st.markdown(""" In order to show the interest of the B-Lasso method we're gonna try to decompose a signal that is made of two gaussians.""")
+
+        st.markdown(f""" The first plot is the best approximation that is possible if we use a discrete dictionnary made 
+                    by replicating curve and translate them by step : $\Delta = 1$. We can see that the approximation can't
+                    overlap the observation because of because of this non-continuity.""")
+        
+        st.markdown(f"""On the other hand in the second plot we can see that the B-Lasso approximation is perfect.""")
+
+
+        if not st.session_state["flag_comparaison_curves_importation"]:
+            
+            with open("ex_continuous_adv.json", "r") as file:
+                json_data = json.load(file)
+
+            st.session_state["comp_t"] = json_data["abscisses"]
+            st.session_state["comp_y"] = json_data["y"]
+            st.session_state["comp_hat_continuous"] = json_data["y_hat_continuous"]
+            st.session_state["comp_hat_discrete"] = json_data["y_hat_discrete"]
+            st.session_state["flag_comparaison_curves_importation"] = True
+
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["comp_t"],
+                y=st.session_state["comp_y"],
+                mode="lines",
+                line=dict(color = 'red',width=3, dash='dot'),
+                name = "Observation" 
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["comp_t"],
+                y=st.session_state["comp_hat_discrete"],
+                mode="lines",
+                line=dict(color = 'green', width=3),
+                name = "Discrete appoximation"
+            )
+        )
+        fig.update_xaxes(tickformat=".0", dtick=1, showgrid=True)
+        fig.update_yaxes(showgrid=False)
+        fig.update_layout(
+            title = 'Lasso on a discrete dictionnary',
+            height=500,
+            width=700,
+        )
+        fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+        st.plotly_chart(fig)
+
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["comp_t"],
+                y=st.session_state["comp_hat_continuous"],
+                mode="lines",
+                line=dict(color = 'lightblue', width=5),
+                name = "Blasso appoximation"
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["comp_t"],
+                y=st.session_state["comp_y"],
+                mode="lines",
+                line=dict(color = 'red', width=3, dash='dot'),
+                name = "Observation"
+            )
+        )
+        fig.update_xaxes(tickformat=".0", dtick=1, showgrid=True)
+        fig.update_yaxes(showgrid=False)
+        fig.update_layout(
+            title = 'B-Lasso',
+            height=500,
+            width=700,
+            #showlegend=False,
+        )
+        fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+        st.plotly_chart(fig)
+
+
 
 with tab_discrete_dict:
     col01, col02, col03 = st.columns([1, 3, 1])
@@ -610,13 +701,16 @@ with tab_basic:
             )
 
         with col2:
-            loss_choice = st.selectbox("Beta_loss :", ("Frobenius (CD)","Frobenius (MU)","Kullback-Leibler (MU)"))
+            loss_choice = st.selectbox(
+                "Beta_loss :",
+                ("Frobenius (CD)", "Frobenius (MU)", "Kullback-Leibler (MU)"),
+            )
             if loss_choice == "Kullback-Leibler (MU)":
                 st.session_state["loss"] = "kullback-leibler"
                 st.session_state["solver"] = "mu"
             elif loss_choice == "Frobenius (CD)":
                 st.session_state["loss"] = "frobenius"
-                st.session_state["solver"] = "cd"    
+                st.session_state["solver"] = "cd"
             else:
                 st.session_state["loss"] = "frobenius"
                 st.session_state["solver"] = "mu"
@@ -643,7 +737,7 @@ with tab_basic:
                 alpha_W=st.session_state["a_W"],
                 alpha_H=st.session_state["a_H"],
                 random_state=0,
-                tol = 1e-6,
+                tol=1e-6,
                 max_iter=15000,
             )
             # Increase max_iter to get convergence
