@@ -1104,13 +1104,14 @@ with tab_ref_expert:
                     select bellow which reference curve to use in approximation."""
         )
         st.session_state["ref_20_50"] = st.radio(
-            "",
+            "do no show",
             [
                 "All 3 at the same time",
                 "Limons Grossiers",
                 "Limons Grossiers-Loess",
                 "Loess",
             ],
+            label_visibility="hidden"
         )
 
         st.subheader(
