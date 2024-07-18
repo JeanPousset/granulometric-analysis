@@ -112,6 +112,35 @@ if "ref_curves" not in st.session_state:
     st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"] = np.genfromtxt(
         "ref_curves/ref_LimonsGrossiersLoess.csv", delimiter=","
     )
+    st.session_state["scaled_ref_curves"] = (
+        {}
+    )  # for ref curves that will be on the same scale as observations (for NN-LASSO)
+    # st.session_state['scaled_ref_curves']['abscisses'] = st.session_state["ref_curves"]["ref_ArgilesFines"][0,:] # --> abscisses not necessary
+    st.session_state["scaled_ref_curves"]["ref_ArgilesFines"] = (
+        st.session_state["ref_curves"]["ref_ArgilesFines"][1, :] * 0.00101501
+    )
+    st.session_state["scaled_ref_curves"]["ref_ArgilesClassiques"] = (
+        st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :] * 0.0353269
+    )
+    st.session_state["scaled_ref_curves"]["ref_Alterites"] = (
+        st.session_state["ref_curves"]["ref_Alterites"][1, :] * 0.107063
+    )
+    st.session_state["scaled_ref_curves"]["ref_SablesFins"] = (
+        st.session_state["ref_curves"]["ref_SablesFins"][1, :] * 0.135512
+    )
+    st.session_state["scaled_ref_curves"]["ref_SablesGrossiers"] = (
+        st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :] * 0.0903764
+    )
+    st.session_state["scaled_ref_curves"]["ref_Loess"] = (
+        st.session_state["ref_curves"]["ref_Loess"][1, :] * 0.107131
+    )
+    st.session_state["scaled_ref_curves"]["ref_LimonsGrossiers"] = (
+        st.session_state["ref_curves"]["ref_LimonsGrossiers"][1, :] * 0.141878
+    )
+    st.session_state["scaled_ref_curves"]["ref_LimonsGrossiersLoess"] = (
+        st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][1, :] * 0.0747438
+    )
+
 # region Other variables / functions
 # Integral approximations with trapeze method for every observation
 
@@ -165,17 +194,22 @@ with tab_continous_dict:
         st.header("Decomposition onto a continuous dictionnary")
         st.subheader("Graphique exemple of the method's interest")
 
-        st.markdown(""" In order to show the interest of the B-Lasso method we're gonna try to decompose a signal that is made of two gaussians.""")
+        st.markdown(
+            """ In order to show the interest of the B-Lasso method we're gonna try to decompose a signal that is made of two gaussians."""
+        )
 
-        st.markdown(f""" The first plot is the best approximation that is possible if we use a discrete dictionnary made 
+        st.markdown(
+            f""" The first plot is the best approximation that is possible if we use a discrete dictionnary made 
                     by replicating curve and translate them by step : $\Delta = 1$. We can see that the approximation can't
-                    overlap the observation because of because of this non-continuity.""")
-        
-        st.markdown(f"""On the other hand in the second plot we can see that the B-Lasso approximation is perfect.""")
+                    overlap the observation because of because of this non-continuity."""
+        )
 
+        st.markdown(
+            f"""On the other hand in the second plot we can see that the B-Lasso approximation is perfect."""
+        )
 
         if not st.session_state["flag_comparaison_curves_importation"]:
-            
+
             with open("ex_continuous_adv.json", "r") as file:
                 json_data = json.load(file)
 
@@ -191,8 +225,8 @@ with tab_continous_dict:
                 x=st.session_state["comp_t"],
                 y=st.session_state["comp_y"],
                 mode="lines",
-                line=dict(color = 'red',width=3, dash='dot'),
-                name = "Observation" 
+                line=dict(color="red", width=3, dash="dot"),
+                name="Observation",
             )
         )
         fig.add_trace(
@@ -200,14 +234,14 @@ with tab_continous_dict:
                 x=st.session_state["comp_t"],
                 y=st.session_state["comp_hat_discrete"],
                 mode="lines",
-                line=dict(color = 'green', width=3),
-                name = "Discrete appoximation"
+                line=dict(color="green", width=3),
+                name="Discrete appoximation",
             )
         )
         fig.update_xaxes(tickformat=".0", dtick=1, showgrid=True)
         fig.update_yaxes(showgrid=False)
         fig.update_layout(
-            title = 'Lasso on a discrete dictionnary',
+            title="Lasso on a discrete dictionnary",
             height=500,
             width=700,
         )
@@ -220,8 +254,8 @@ with tab_continous_dict:
                 x=st.session_state["comp_t"],
                 y=st.session_state["comp_hat_continuous"],
                 mode="lines",
-                line=dict(color = 'lightblue', width=5),
-                name = "Blasso appoximation"
+                line=dict(color="lightblue", width=5),
+                name="Blasso appoximation",
             )
         )
         fig.add_trace(
@@ -229,21 +263,20 @@ with tab_continous_dict:
                 x=st.session_state["comp_t"],
                 y=st.session_state["comp_y"],
                 mode="lines",
-                line=dict(color = 'red', width=3, dash='dot'),
-                name = "Observation"
+                line=dict(color="red", width=3, dash="dot"),
+                name="Observation",
             )
         )
         fig.update_xaxes(tickformat=".0", dtick=1, showgrid=True)
         fig.update_yaxes(showgrid=False)
         fig.update_layout(
-            title = 'B-Lasso',
+            title="B-Lasso",
             height=500,
             width=700,
-            #showlegend=False,
+            # showlegend=False,
         )
         fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
         st.plotly_chart(fig)
-
 
 
 with tab_discrete_dict:
@@ -283,15 +316,15 @@ with tab_discrete_dict:
             st.number_input(
                 "Coefficient of penalization (lambda)",
                 key="lambda_nn_lasso",
-                value=50.0,
+                value=10.0,
                 min_value=0.0,
                 step=1.0,
             )
         with col3:
-            st.number_input("Precision for dual gap", key="p_dg", value=10.0)
+            st.number_input("Precision for dual gap", key="p_dg", value=5.0)
         with col4:
             st.number_input(
-                "Precision for complementary slackness", key="p_cs", value=10.0
+                "Precision for complementary slackness", key="p_cs", value=5.0
             )
 
         if st.button("Run decomposition"):
@@ -302,10 +335,10 @@ with tab_discrete_dict:
                 columns=mesurement_points
             )
 
-            for rc_name, rc in st.session_state["ref_curves"].items():
+            for rc_name, rc in st.session_state["scaled_ref_curves"].items():
 
                 # Find the first and last index of the measurement points of the peak-interval for the material of the reference curve
-                peak_ind = np.argmax(rc[1, :])
+                peak_ind = np.argmax(rc[:])
                 peak_loc = mesurement_points[peak_ind]
                 mat_rc = (
                     ""  # name of the material for the interval of our ref-curve's peak
@@ -327,7 +360,7 @@ with tab_discrete_dict:
                 for i in range(rel_peak_ind + 1):
                     # Shifting ref curve to the left by dropping the i first values and adding i zeros at the end
                     duplicate = np.pad(
-                        rc[1, i:], (0, i), mode="constant", constant_values=0
+                        rc[i:], (0, i), mode="constant", constant_values=0
                     )
                     st.session_state["discrete_dictionnary"].loc[
                         f"{rc_name} ({mesurement_points[peak_ind-i]})"
@@ -336,7 +369,7 @@ with tab_discrete_dict:
                 for i in range(1, rel_last_ind - rel_peak_ind + 1):
                     # Shifting ref curve to the right by dropping the i last values and adding i zeros at the begining
                     duplicate = np.pad(
-                        rc[1, :-i], (i, 0), mode="constant", constant_values=0
+                        rc[:-i], (i, 0), mode="constant", constant_values=0
                     )
                     # st.write(peak_ind+i)
                     st.session_state["discrete_dictionnary"].loc[
@@ -360,7 +393,7 @@ with tab_discrete_dict:
             # hyper-parameters
             p_dg = 1
             p_cs = 1
-            it_max = 1e5
+            it_max = 1e3
             MtM = np.dot(M.T, M)  # saving result to optimize
             eta = 2
             # Lipschitz constant of our objective function
@@ -412,6 +445,45 @@ with tab_discrete_dict:
                     dg <= st.session_state["p_dg"]
                     and cs <= dg <= st.session_state["p_cs"]
                 )
+            
+            # Non-negative least square with projected gradient method
+            def NN_LS_proj_grad(Z, x_obs): 
+                a_ls = np.ones(Z.shape[1])
+                prec_LS = 1e-3
+                it_max_LS = 1e4
+                err = prec_LS+1
+                it = 0
+                ZtZ = np.dot(Z.T,Z)
+                Zx = np.dot(Z.T,x_obs)
+                rho_LS = 1 / (2 * np.real(np.max(np.linalg.eigvals(ZtZ)))) # 1 / Lipschitz constant of Z
+
+                while err > prec_LS and it < it_max_LS:
+                    a_ls_1 = np.maximum(0.0 ,a_ls - rho_LS * (np.dot(ZtZ,a_ls)-Zx))
+                    err = np.linalg.norm(a_ls_1-a_ls)
+                    a_ls = a_ls_1
+                    it += 1
+
+                if it == it_max_LS:
+                    st.warning('Non convergence of NN-LS for approximation reconstruction ')
+
+                return a_ls,it
+
+            # Reconstruction of the observation with least square problem to avoid bias due to l1 penality
+            def reconstruction_LS(a, x_obs):
+
+                Z = M[:, a > 0.0]                        # construction of Z matix in the ||x-Zc||^2 minimisation
+                a_tmp,it_ls = NN_LS_proj_grad(Z,x_obs)   # resolving least-square problem (a_tmp is a small vector)
+                approx_ls = np.dot(Z,a_tmp)              # approximation construction
+                a_ls = np.zeros(a.shape)                 # spare vector, usefull to label our reconstruction 
+                k=0                                      #
+                for i in range(len(a_ls)):
+                    if a[i] > 0.0:
+                        a_ls[i] = a_tmp[k]
+                        if a_tmp[k] < 0.0 :
+                            st.error(f"Warning !!!! : ls reconstruction produced negativ coefficient {a_tmp[k]=}")
+                        k += 1
+
+                return a_ls,approx_ls,it_ls
 
             # endregion
 
@@ -460,9 +532,10 @@ with tab_discrete_dict:
                     if it == it_max:
                         st.warning("Non-convergence for projected gradient method")
 
-                    # argmin, approx, and nb of iterations
-                    return a, np.dot(M, a).flatten(), it
-
+                    
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
+                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+                
             if st.session_state["nn_lasso_method"] == "Frank-Wolfe":
 
                 def decomposition_algo(x, lambda_):
@@ -522,8 +595,8 @@ with tab_discrete_dict:
                         fegh = 3
                         st.warning("Non-convergence for Frank-Wolfe method")
 
-                    # argmin, approx, and nb of iterations
-                    return a, np.dot(M, a).flatten(), it
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
+                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
 
             if (
                 st.session_state["nn_lasso_method"]
@@ -554,8 +627,9 @@ with tab_discrete_dict:
                     if it == it_max:
                         st.warning("Non-convergence for projected gradient method")
 
-                    # argmin, approx, and nb of iterations
-                    return a, np.dot(M, a).flatten(), it
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
+                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+
 
             if st.session_state["nn_lasso_method"] == "Projected gradient":
 
@@ -579,8 +653,9 @@ with tab_discrete_dict:
                         fegh = 3
                         st.warning("Non-convergence for projected gradient method")
 
-                    # argmin, approx, and nb of iterations
-                    return a, np.dot(M, a).flatten(), it
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
+                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+
 
             if (
                 st.session_state["nn_lasso_method"]
@@ -608,8 +683,9 @@ with tab_discrete_dict:
                     if it == it_max:
                         st.warning("Non-convergence for projected gradient method")
 
-                    # argmin, approx, and nb of iterations
-                    return a, np.dot(M, a).flatten(), it
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
+                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+
 
             # endregion
 
@@ -617,6 +693,7 @@ with tab_discrete_dict:
 
             st.session_state["Prop_nn_lasso"] = {}
             nb_it_total = 0
+            nb_it_total_ls = 0
             start_time = time.time()
 
             compute_advancement = st.empty()
@@ -628,10 +705,11 @@ with tab_discrete_dict:
                         f"approximation ({k} over {nb_curves}) -> sample : {index} "
                     )
                 # compute decomposition for our observation x_i
-                a_i, approx_i, it_i = decomposition_algo(
+                a_i, approx_i, it_i, it_ls_i = decomposition_algo(
                     row.to_numpy(), st.session_state["lambda_nn_lasso"]
                 )
                 nb_it_total += it_i
+                nb_it_total_ls += it_ls_i
                 st.session_state["X-X_hat-X_ref"].loc[f"dd-{index}"] = approx_i
 
                 # saving coefficient that are non-zero
@@ -656,13 +734,104 @@ with tab_discrete_dict:
             end_time = time.time()
 
             mean_it = (1.0 * nb_it_total) / len(st.session_state["granulometrics"])
+            mean_it_ls = (1.0 * nb_it_total_ls) / len(st.session_state["granulometrics"])
             with compute_advancement.container():
                 st.success("Decomposition computed with success")
-                st.write(f"mean of iteration number : {mean_it}")
+                st.write(f"mean of iterations (decomposition algorithm) : {mean_it}")
+                st.write(f"mean of iterations (reconstruction algorithm) : {mean_it_ls}")
                 st.write(f"Execution time : {end_time-start_time:.2f} seconds")
 
             st.session_state["dd_flag"] = True
             # endregion
+
+        # region scaled reference curves
+        st.subheader("Scaled reference curves")
+        st.markdown(
+            """Reference curves are scaled so they all have an aera under the curve of one (with logarithmic abscisses). 
+                    This result in reference curves' peak height that are way greater than the observations. Then the coefficient
+                    for this reference curve in NN-LASSO is shrinked because it is very low in order to have a good reconstruction 
+                    with the good peak height. To fix that we re-scaled the references curves so they have the same peak height as 
+                    observation mean. We have then the following observations-scaled referenced curves :"""
+        )
+        fig = go.Figure()
+        abscisses = st.session_state["ref_curves"]["ref_ArgilesFines"][
+            0, :
+        ]  # for abscisses
+        fig.add_trace(
+            go.Scatter(
+                x=abscisses,
+                y=st.session_state["scaled_ref_curves"]["ref_ArgilesFines"],
+                mode="lines",
+                name="Argiles fines (<1 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=abscisses,
+                y=st.session_state["scaled_ref_curves"]["ref_ArgilesClassiques"],
+                mode="lines",
+                name="Argiles grossières (1-7 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=abscisses,
+                y=st.session_state["scaled_ref_curves"]["ref_Alterites"],
+                mode="lines",
+                name="Limons d'altération (7-20 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=abscisses,
+                y=st.session_state["scaled_ref_curves"]["ref_LimonsGrossiers"],
+                mode="lines",
+                name="Limons grossiers (20-50 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=abscisses,
+                y=st.session_state["scaled_ref_curves"]["ref_Loess"],
+                mode="lines",
+                name="Loess (20-50 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=abscisses,
+                y=st.session_state["scaled_ref_curves"]["ref_LimonsGrossiersLoess"],
+                mode="lines",
+                name="Loess sans limons (20-50 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=abscisses,
+                y=st.session_state["scaled_ref_curves"]["ref_SablesFins"],
+                mode="lines",
+                name="Sables fins (50-100 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=abscisses,
+                y=st.session_state["scaled_ref_curves"]["ref_SablesGrossiers"],
+                mode="lines",
+                name="Sables grossires (>100 microns)",
+            )
+        )
+
+        fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+        fig.update_layout(
+            height=500,
+            showlegend=True,
+            xaxis_title=" grain diametere (micrometers, log-scale)",
+        )
+        fig.update_traces(hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+
+        st.plotly_chart(fig)
+        # endregion
 
 
 with tab_basic:
@@ -933,7 +1102,7 @@ with tab_ref_expert:
             """In this section we don't use any NMF algorithm. Instead we use reference curves 
                     that has been build from various curves of our data set that has been certified as 
                     pure by experts. We're going to use these curves to compare them with the end-members
-                    we find and also to build differents approximations. """
+                    we find and also to build differents approximations."""
         )
 
         st.subheader("List of reference curves")
@@ -1111,7 +1280,7 @@ with tab_ref_expert:
                 "Limons Grossiers-Loess",
                 "Loess",
             ],
-            label_visibility="hidden"
+            label_visibility="hidden",
         )
 
         st.subheader(
