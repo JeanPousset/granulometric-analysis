@@ -302,6 +302,8 @@ with tab_discrete_dict:
             label="Choose the resolution method",
             options=[
                 "Frank-Wolfe",
+                "NN FW (proj with max 0)",
+                "NN FW step 1 modification",
                 "FISTA with backtracking",
                 "Proximal Gradient with backtracking",
                 "Proximal Gradient with constant step-size",
@@ -387,7 +389,7 @@ with tab_discrete_dict:
 
             # endregion
 
-            # region algorithms
+            # region functions
 
             M = np.transpose(st.session_state["discrete_dictionnary"].to_numpy())
             # hyper-parameters
@@ -417,7 +419,7 @@ with tab_discrete_dict:
                     # + 1 / (2 * lambda_) * np.linalg.norm(a1 - a, 2) ** 2
                 )
 
-            # region Stop-criterions functions
+            # Stop-criterions functions
             def rho(a, x, lambda_):
                 return (
                     lambda_
@@ -472,6 +474,8 @@ with tab_discrete_dict:
             def reconstruction_LS(a, x_obs):
 
                 Z = M[:, a > 0.0]                        # construction of Z matix in the ||x-Zc||^2 minimisation
+                if Z.shape[1] == 0:                      
+                    return a, np.zeros_like(x_obs), 0    # case of empty solution
                 a_tmp,it_ls = NN_LS_proj_grad(Z,x_obs)   # resolving least-square problem (a_tmp is a small vector)
                 approx_ls = np.dot(Z,a_tmp)              # approximation construction
                 a_ls = np.zeros(a.shape)                 # spare vector, usefull to label our reconstruction 
@@ -486,6 +490,8 @@ with tab_discrete_dict:
                 return a_ls,approx_ls,it_ls
 
             # endregion
+
+            # region algorithms
 
             if st.session_state["nn_lasso_method"] == "FISTA with backtracking":
 
@@ -535,7 +541,134 @@ with tab_discrete_dict:
                     
                     a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
                     return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
-                
+
+            if st.session_state['nn_lasso_method'] == "NN FW step 1 modification":
+                def decomposition_algo(x, lambda_):
+                    a = np.zeros(M.shape[1])
+                    w = np.linalg.norm(x, 2) ** 2 / (2 * lambda_)
+                    w_bar = w
+                    it = 0
+                    M_prime = np.hstack((M,-M))
+                    f = partial(f_global, x_=x, lambda_=lambda_)
+
+                    # avoid having to compute it every time
+                    Mx = np.dot(M.T, x).reshape(a.shape)
+                    # M_prime_x = np.dot(M_prime.T, x)
+                    # MtM_prime = np.dot(M_prime.T,M_prime)
+
+                    # case where || M^t x ||_infty <= lambda
+                    if np.max(np.abs(Mx)) <= lambda_:
+                        return a, np.zeros(x.shape), it
+
+                    while not stop_criterions(a, x, lambda_) and it < it_max:
+
+                        # abbrevations
+                        i_star = np.argmax(Mx - np.dot(MtM, a))
+                        m_i_star = M[:, i_star]
+                        r = x - np.dot(M, a)
+
+                        # STEP 1:
+                        if np.max(np.abs(Mx - np.dot(MtM, a))) <= lambda_:
+                            a_pre = np.zeros(a.shape)
+                            w_pre = 0
+                        else:
+                            canonic_vec = np.zeros(a.shape)
+                            canonic_vec[i_star] = 1
+                            a_pre = canonic_vec * w_bar
+                            w_pre = w_bar
+
+                        # STEP2:
+                        v = m_i_star * np.sign(np.dot(m_i_star, r)) * w_pre - np.dot(
+                            M, a
+                        )
+                        gamma_pre = (np.dot(v, r) + lambda_ * (w - w_pre)) / (
+                            np.linalg.norm(v, 2) ** 2
+                        )
+                        if gamma_pre < 0:
+                            gamma = 0
+                        elif gamma_pre > 1:
+                            gamma = 1
+                        else:
+                            gamma = gamma_pre
+
+                        # STEP3:
+                        a = gamma * a_pre + (1 - gamma) * a
+                        w = gamma * w_pre + (1 - gamma) * w
+                        w_bar = np.min([w_bar, f(a) / lambda_])
+
+                        it += 1
+
+                    if it == it_max:
+                        fegh = 3
+                        st.warning("Non-convergence for Frank-Wolfe method")
+
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
+                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+
+            if st.session_state["nn_lasso_method"] == "NN FW (proj with max 0)":
+
+                def decomposition_algo(x, lambda_):
+                    a = np.zeros(M.shape[1])
+                    w = np.linalg.norm(x, 2) ** 2 / (2 * lambda_)
+                    w_bar = w
+                    it = 0
+
+                    f = partial(f_global, x_=x, lambda_=lambda_)
+
+                    # avoid to compute it every time
+                    Mx = np.dot(M.T, x).reshape(a.shape)
+
+                    # case where || M^t x ||_infty <= lambda
+                    if np.max(np.abs(Mx)) <= lambda_:
+                        return a, np.zeros(x.shape), it
+
+                    while not stop_criterions(a, x, lambda_) and it < it_max:
+
+                        # abbrevations
+                        i_star = np.argmax(Mx - np.dot(MtM, a))
+                        m_i_star = M[:, i_star]
+                        r = x - np.dot(M, a)
+
+                        # STEP 1:
+                        if np.sum(Mx - np.dot(MtM, a)) <= lambda_:
+                            a_pre = np.zeros(a.shape)
+                            w_pre = 0
+                        else:
+                            canonic_vec = np.zeros(a.shape)
+                            canonic_vec[i_star] = 1
+                            if not np.array_equal(np.maximum(canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar,0),canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar) :
+                                st.write(" Difference")
+                            a_pre = np.maximum(canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar,0)
+                            w_pre = w_bar
+
+                        # STEP2:
+                        v = m_i_star * np.sign(np.dot(m_i_star, r)) * w_pre - np.dot(
+                            M, a
+                        )
+                        gamma_pre = (np.dot(v, r) + lambda_ * (w - w_pre)) / (
+                            np.linalg.norm(v, 2) ** 2
+                        )
+                        if gamma_pre < 0:
+                            gamma = 0
+                        elif gamma_pre > 1:
+                            gamma = 1
+                        else:
+                            gamma = gamma_pre
+
+                        # STEP3:
+                        a = gamma * a_pre + (1 - gamma) * a
+                        w = gamma * w_pre + (1 - gamma) * w
+                        w_bar = np.min([w_bar, f(a) / lambda_])
+
+                        it += 1
+
+                    if it == it_max:
+                        fegh = 3
+                        st.warning("Non-convergence for Frank-Wolfe method")
+
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
+                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+
             if st.session_state["nn_lasso_method"] == "Frank-Wolfe":
 
                 def decomposition_algo(x, lambda_):
@@ -1094,6 +1227,7 @@ with tab_basic:
 
                 st.plotly_chart(fig)
 
+
 with tab_ref_expert:
     col01, col02, col03 = st.columns([1, 3, 1])
     with col02:
@@ -1431,6 +1565,7 @@ with tab_ref_expert:
                     value=f"{errL1_approx_rc:.3}%",
                     label_visibility="visible",
                 )
+
 
 with tab_result:
     st.header("Display observations to compare them")
