@@ -302,6 +302,7 @@ with tab_discrete_dict:
             label="Choose the resolution method",
             options=[
                 "Frank-Wolfe",
+                "NN gready algo",
                 "NN FW (proj with max 0)",
                 "NN FW step 1 modification",
                 "FISTA with backtracking",
@@ -493,6 +494,51 @@ with tab_discrete_dict:
 
             # region algorithms
 
+            if st.session_state["nn_lasso_method"] == "NN gready algo":
+
+                def decomposition_algo(x, lambda_):
+                    
+                    # initialization
+                    a0 = np.zeros(M.shape[1]) 
+                    a0[random.randint(0,len(a0)-1)] = lambda_
+                    a = a0
+                    #a = np.zeros(M.shape[1])
+                    Mx = np.dot(M.T, x).reshape(a.shape)
+                    it = 0
+
+                    for i in range(M.shape[1]):
+                    
+                        # STEP 1
+                        j_star = np.argmin(np.dot(MtM,a)-Mx)
+                        a_1 = np.zeros(a.shape)
+                        a_1[j_star] = 1
+
+                        # STEP 2
+                        q = (lambda_ * a_1 - a) 
+                        if np.linalg.norm(q) == 0:
+                            Γ = 0   # case where λ*a_1 = a
+                        Γ = - np.dot(q,a) / (np.linalg.norm(q,2) ** 2)
+                        if Γ < 0:
+                            Γ_t = 0
+                        elif Γ > 1:
+                            Γ_t = 1
+                        else:
+                            Γ_t = Γ
+
+                        # STEP 3
+                        a = a + Γ_t * q
+
+                        it += 1
+                    
+                    if it == it_max:
+                        st.warning("Non-convergence for NN gready method")
+
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
+                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+                        
+                        
+
+
             if st.session_state["nn_lasso_method"] == "FISTA with backtracking":
 
                 def decomposition_algo(x, lambda_):
@@ -569,9 +615,11 @@ with tab_discrete_dict:
 
                         # STEP 1:
                         if np.max(np.abs(Mx - np.dot(MtM, a))) <= lambda_:
+                            st.write("Zero case")
                             a_pre = np.zeros(a.shape)
                             w_pre = 0
                         else:
+                            st.write("Non-zero case")
                             canonic_vec = np.zeros(a.shape)
                             canonic_vec[i_star] = 1
                             a_pre = canonic_vec * w_bar
@@ -599,7 +647,6 @@ with tab_discrete_dict:
                         it += 1
 
                     if it == it_max:
-                        fegh = 3
                         st.warning("Non-convergence for Frank-Wolfe method")
 
                     a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
