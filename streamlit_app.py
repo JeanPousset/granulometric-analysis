@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import cvxpy as cp
 from multiprocessing import Pool
 from functools import partial
-
+import openpyxl
 
 # from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm
 from plotly.subplots import make_subplots
@@ -23,12 +23,11 @@ st.set_page_config(page_title="NMF test", layout="wide")
 
 st.title("Methods for gromulometric analysis")
 
-
 # data_granulometry_03_06_24
 # Loading observation data :
 if "granulometrics" not in st.session_state:
     data = pd.read_excel(
-        "data_granulometry_03_06_24.xls", sheet_name=0, header=0, index_col=2
+        "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, index_col=2, engine='openpyxl' 
     )
     # Deletion of additional information
     data = data.drop(columns=["Dept", "Commune", "Type"])
@@ -43,8 +42,11 @@ if "granulometrics" not in st.session_state:
     )
     data[[0.03]] = 0
     data = data.div(data.sum(axis=1), axis=0) * 100  # Norming curves
-    st.session_state["granulometrics"] = data
-
+    st.session_state["granulometrics"] = data        # dataframe to use
+    # dataframe to update the excel file (adding or removing observations)
+    st.session_state["raw_data"] = pd.read_excel(
+        "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, engine='openpyxl')    
+       
 # region initialisation of session variables
 if "flag_comparaison_curves_importation" not in st.session_state:
     st.session_state["flag_comparaison_curves_importation"] = False
@@ -178,15 +180,389 @@ materials = {
 # endregion
 
 
-tab_continous_dict, tab_discrete_dict, tab_basic, tab_ref_expert, tab_result = st.tabs(
+tab_data,tab_continous_dict, tab_discrete_dict, tab_basic, tab_result = st.tabs(
     [
+        "Granulometric data",
         "Continuous dictionary",
         "Discrete dictionnary",
         "Basic NMF (with penalization)",
-        "Experimental references",
         "Results",
     ]
 )
+
+with tab_data:
+    col01, col02, col03 = st.columns([1, 3, 1])
+    with col02:
+        st.header("Presentation of our granulometric data")
+
+        st.subheader("Our Data :s")
+        st.dataframe(st.session_state['granulometrics'])
+
+        st.subheader("Add new observation")
+
+        with st.form(key='input_obs_form'):
+            col1, col2 = st.columns([1,3])
+            with col1:
+                nb_line = st.number_input('Number of observations :', value = 1, min_value= 1, max_value = 10000)
+            with col2:
+                sep = st.radio("Separator", options = ['tabulation', 'space', 'comma', 'semicolon'])
+            vecteur = st.text_area('Raw data (with metadata), separated by tabulations :', height=150)  # Utiliser un textarea pour plus de commodité
+            submit_button = st.form_submit_button(label='Add')
+
+            if submit_button:
+                None
+
+        st.subheader("Remove observation")
+        st.markdown("Choose which label to remove and then click on \"Confirm\". Please reload the page to save change !")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.multiselect("",options=st.session_state["granulometrics"].index, key = "labels_to_remove", label_visibility='collapsed')
+
+        with col2:
+            if st.button("Confirm"):
+                    # Select observation execpt those to be removed
+                    st.session_state['raw_data'] = st.session_state['raw_data'][~st.session_state['raw_data']['Echt'].isin(st.session_state['labels_to_remove'])]
+                    # Update the excel file 
+                    st.session_state['raw_data'].to_excel("data_granulometry_03_06_24.xlsx", sheet_name=0, index = False)
+                    st.success("Removing asked, now reload the page")
+                    st.dataframe(st.session_state['raw_data'])
+
+        st.header("Approximation of our observation by reference curves")
+        st.markdown(
+            """In this section we don't use any NMF algorithm. Instead we use reference curves 
+                    that has been build from various curves of our data set that has been certified as 
+                    pure by experts. We're going to use these curves to compare them with the end-members
+                    we find and also to build differents approximations."""
+        )
+
+        st.subheader("List of reference curves")
+        st.markdown(
+            f"""There are 8 differents reference curves that are mainly characterised by the location 
+                    of the peak on the x axis (diametre in $\\mu m$). You can see their plots below."""
+        )
+
+        with st.expander("List of reference curves :"):
+
+            st.markdown(
+                "We plot first the reference curve of the Argiles Fines (fine clay) because its peak is much greater than the others"
+            )
+            fig = go.Figure()
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
+                    y=st.session_state["ref_curves"]["ref_ArgilesFines"][1, :],
+                    mode="lines",
+                    name="Argiles Fines (<1 microns)",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
+                    y=st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :],
+                    mode="lines",
+                    name="Argiles Grossières (1-7 microns)",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
+                    y=st.session_state["ref_curves"]["ref_Alterites"][1, :],
+                    mode="lines",
+                    name="Alterites (7-20 microns)",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
+                    y=st.session_state["ref_curves"]["ref_SablesFins"][1, :],
+                    mode="lines",
+                    name="Sables Fins (50-100 microns)",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
+                    y=st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :],
+                    mode="lines",
+                    name="Sables Grossiers (>100 microns)",
+                )
+            )
+
+            fig = go.Figure()
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
+                    y=st.session_state["ref_curves"]["ref_ArgilesFines"][1, :],
+                    mode="lines",
+                    name="Argiles Fines (<1 microns)",
+                )
+            )
+            fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+            fig.update_layout(
+                height=500,
+                showlegend=True,
+                xaxis_title=" grain diametere (micrometers, log-scale)",
+            )
+            fig.update_traces(hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+
+            st.plotly_chart(fig)
+
+            fig = go.Figure()
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
+                    y=st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :],
+                    mode="lines",
+                    name="Argiles Grossières (1-7 microns)",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
+                    y=st.session_state["ref_curves"]["ref_Alterites"][1, :],
+                    mode="lines",
+                    name="Alterites (7-20 microns)",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
+                    y=st.session_state["ref_curves"]["ref_SablesFins"][1, :],
+                    mode="lines",
+                    name="Sables Fins (50-100 microns)",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
+                    y=st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :],
+                    mode="lines",
+                    name="Sables Grossiers (>100 microns)",
+                )
+            )
+
+            fig.update_xaxes(type="log", tickformat=".1e", showgrid=True)
+            fig.update_layout(
+                # Ajuster la hauteur de la figure en fonction du nombre de plots
+                height=500,
+                xaxis_title=" grain diametere (micrometers, log-scale)",
+            )
+            fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+
+            st.plotly_chart(fig)
+
+            st.markdown(
+                "For the peak located between 20 and 50 $\\mu m$ we can choose between 3 different reference curves :"
+            )
+            st.markdown(" - Limons Grossier")
+            st.markdown(" - Limons Grossier-Loess")
+            st.markdown(" - Limons Loess")
+
+            fig = go.Figure()
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_LimonsGrossiers"][0, :],
+                    y=st.session_state["ref_curves"]["ref_LimonsGrossiers"][1, :],
+                    mode="lines",
+                    name="Limons Grossiers",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][0, :],
+                    y=st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][1, :],
+                    mode="lines",
+                    name="Limons Grossiers-Loess",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=st.session_state["ref_curves"]["ref_Loess"][0, :],
+                    y=st.session_state["ref_curves"]["ref_Loess"][1, :],
+                    mode="lines",
+                    name="Loess",
+                )
+            )
+
+            fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+            fig.update_layout(
+                # Ajuster la hauteur de la figure en fonction du nombre de plots
+                height=500,
+                xaxis_title=" grain diametere (micrometers, log-scale)",
+            )
+            fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+
+            st.plotly_chart(fig)
+
+        st.subheader(
+            "Choice of the reference curve for the peak between 20 and 50 microns"
+        )
+        st.markdown(
+            """As explainend in the list of reference curves we can choose between three reference curves 
+                    (Limons grossier, Limon grossier-loess, Loess) for the peak between 20 and 50 $\\mu m$. Please 
+                    select bellow which reference curve to use in approximation."""
+        )
+        st.session_state["ref_20_50"] = st.radio(
+            "do no show",
+            [
+                "All 3 at the same time",
+                "Limons Grossiers",
+                "Limons Grossiers-Loess",
+                "Loess",
+            ],
+            label_visibility="hidden",
+        )
+
+        st.subheader(
+            "Algorithm to perform an approximation of X from the reference curves"
+        )
+        st.markdown(
+            """We're now going to find the best combinaisons of our reference curves to approximate 
+                    our observation X."""
+        )
+        st.markdown("- $M_{ref}$ is the matrix that contains the 8 reference curves.")
+        st.markdown(
+            "- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation."
+        )
+        st.markdown("So we have the following problem :")
+        st.latex(r""" A_{ref} = \arg \min_{A\geq 0} \Vert X-AM_{ref} \Vert_F^2 """)
+
+        if st.button("Perform estimations with reference curves"):
+
+            # Deleting other 20-50 microns that have not been selected
+            st.session_state["ref_curves_selected"] = st.session_state[
+                "ref_curves"
+            ].copy()
+            st.session_state["rc_label"] = [
+                "Argiles Fines",
+                "Argiles Grossier",
+                "Alterites",
+                "Sables Fins",
+                "Sables grossiers",
+                "Loess",
+                "Limon grossiers",
+                "Limons grossiers Loess",
+            ]
+            if st.session_state["ref_20_50"] == "Limons Grossiers":
+                del st.session_state["ref_curves_selected"]["ref_LimonsGrossiersLoess"]
+                del st.session_state["ref_curves_selected"]["ref_Loess"]
+                st.session_state["rc_label"][5] = "Limon grossiers"
+                st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
+            elif st.session_state["ref_20_50"] == "Limons Grossiers-Loess":
+                del st.session_state["ref_curves_selected"]["ref_LimonsGrossiers"]
+                del st.session_state["ref_curves_selected"]["ref_Loess"]
+                st.session_state["rc_label"][5] = "Limon grossiers Loess"
+                st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
+            elif st.session_state["ref_20_50"] == "Limons Grossiers-Loess":
+                del st.session_state["ref_curves_selected"]["ref_LimonsGrossiersLoess"]
+                del st.session_state["ref_curves_selected"]["ref_LimonsGrossiers"]
+                st.session_state["rc_label"][5] = "Loess"
+                st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
+            # Do nothing if all 3 at the same time selected
+
+            # Gathering y from every reference curve into our M_ref matrix
+            M_ref = np.zeros(
+                (
+                    len(st.session_state["ref_curves_selected"]),
+                    st.session_state["ref_curves_selected"][
+                        "ref_ArgilesClassiques"
+                    ].shape[1],
+                )
+            )
+            for i, ref_curve in enumerate(st.session_state["ref_curves_selected"]):
+                M_ref[int(i), :] = st.session_state["ref_curves_selected"][ref_curve][
+                    1, :
+                ]
+
+            # A_ref is the mimimal argument of the optimisation problem
+            X = st.session_state["granulometrics"].to_numpy()
+            A_ref = X @ M_ref.T @ np.linalg.inv(M_ref @ M_ref.T)
+
+            # Performing minimalization with CVXPY to compare
+            # Declaration of our minimization variable A
+            A = cp.Variable((X.shape[0], M_ref.shape[0]))
+            # Constraint A to be positive
+            constraints = [A >= 0]
+            objective = cp.Minimize(
+                cp.norm(X - A @ M_ref, "fro") ** 2
+            )  # Objective function
+            # problem = cp.Problem(objective)                        # optim without constraint to compare with our direct solution
+            # Definition of our problem
+            problem = cp.Problem(objective, constraints)
+            problem.solve(
+                solver=cp.SCS, verbose=True, eps=1e-10, max_iters=10000
+            )  # Calling solver
+            A_ref_solv = A.value  # We get the result
+
+            # X_ref the approximations of our observations with ref_curves
+            X_ref = pd.DataFrame(
+                A_ref_solv @ M_ref,
+                columns=st.session_state["granulometrics"].columns,
+                index=st.session_state["granulometrics"].index,
+            )
+
+            # df for the proportions
+            RC_areas = np.apply_along_axis(trapeze_areas, 1, M_ref).reshape(
+                (A_ref_solv.shape[1])
+            )  # compute areas of each EM
+            Prop = A_ref_solv * RC_areas
+            Prop = np.apply_along_axis(lambda x: x / np.sum(x) * 100, 1, Prop)
+
+            # naming the columns of Prop with regards of where the peak is located for each EM
+            st.session_state["Prop_rc"] = pd.DataFrame(
+                Prop,
+                index=st.session_state["granulometrics"].index,
+                columns=st.session_state["rc_label"],
+            )
+
+            # Approximation errors l2
+            err2_approx_rc = np.sum(
+                np.linalg.norm(X_ref - st.session_state["granulometrics"], axis=1)
+            )
+            # L1-relativ norm of each approximations
+            st.session_state["Prop_rc"]["L1_rel_norm (%)"] = X_ref.apply(
+                lambda row: L1_relative(row.values, row.name), axis=1
+            )
+            # L1-relativ mean
+            errL1_approx_rc = np.mean(st.session_state["Prop_rc"]["L1_rel_norm (%)"])
+
+            X_ref.index = X_ref.index.map(lambda x: f"r{x}")  # adding "r" before
+
+            # in this case we replace the old reference curves approximation
+            if st.session_state["rc_flag"]:
+                for ind in X_ref.index:
+                    st.session_state["X-X_hat-X_ref"].loc[ind] = X_ref.loc[ind]
+
+            else:  # easier case : there isn't already a reference curves approximation
+                st.session_state["X-X_hat-X_ref"] = pd.concat(
+                    [st.session_state["X-X_hat-X_ref"], X_ref], axis=0
+                )
+                st.session_state["rc_flag"] = True  # They are now result
+
+            st.success("Approximation succeed")
+            # Displaying approx errors
+            col1, col2 = st.columns(2)
+            with col1:
+                st.latex(r""" \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 """)
+            with col2:
+                st.metric(
+                    "sum of quadratic errors",
+                    value=f"{err2_approx_rc:.4}",
+                    label_visibility="visible",
+                )
+            col1, col2 = st.columns(2)
+            with col1:
+                st.latex(
+                    r""" \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
+                )
+            with col2:
+                st.metric(
+                    "mean of L1-relative errors (%)",
+                    value=f"{errL1_approx_rc:.3}%",
+                    label_visibility="visible",
+                )
+
 
 with tab_continous_dict:
     col01, col02, col03 = st.columns([1, 3, 1])
@@ -1275,343 +1651,6 @@ with tab_basic:
                 st.plotly_chart(fig)
 
 
-with tab_ref_expert:
-    col01, col02, col03 = st.columns([1, 3, 1])
-    with col02:
-        st.header("Approximation of our observation by reference curves")
-        st.markdown(
-            """In this section we don't use any NMF algorithm. Instead we use reference curves 
-                    that has been build from various curves of our data set that has been certified as 
-                    pure by experts. We're going to use these curves to compare them with the end-members
-                    we find and also to build differents approximations."""
-        )
-
-        st.subheader("List of reference curves")
-        st.markdown(
-            f"""There are 8 differents reference curves that are mainly characterised by the location 
-                    of the peak on the x axis (diametre in $\\mu m$). You can see their plots below."""
-        )
-
-        with st.expander("List of reference curves :"):
-
-            st.markdown(
-                "We plot first the reference curve of the Argiles Fines (fine clay) because its peak is much greater than the others"
-            )
-            fig = go.Figure()
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
-                    y=st.session_state["ref_curves"]["ref_ArgilesFines"][1, :],
-                    mode="lines",
-                    name="Argiles Fines (<1 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
-                    y=st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :],
-                    mode="lines",
-                    name="Argiles Grossières (1-7 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-                    y=st.session_state["ref_curves"]["ref_Alterites"][1, :],
-                    mode="lines",
-                    name="Alterites (7-20 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
-                    y=st.session_state["ref_curves"]["ref_SablesFins"][1, :],
-                    mode="lines",
-                    name="Sables Fins (50-100 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
-                    y=st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :],
-                    mode="lines",
-                    name="Sables Grossiers (>100 microns)",
-                )
-            )
-
-            fig = go.Figure()
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
-                    y=st.session_state["ref_curves"]["ref_ArgilesFines"][1, :],
-                    mode="lines",
-                    name="Argiles Fines (<1 microns)",
-                )
-            )
-            fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
-            fig.update_layout(
-                height=500,
-                showlegend=True,
-                xaxis_title=" grain diametere (micrometers, log-scale)",
-            )
-            fig.update_traces(hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
-
-            st.plotly_chart(fig)
-
-            fig = go.Figure()
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
-                    y=st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :],
-                    mode="lines",
-                    name="Argiles Grossières (1-7 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-                    y=st.session_state["ref_curves"]["ref_Alterites"][1, :],
-                    mode="lines",
-                    name="Alterites (7-20 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
-                    y=st.session_state["ref_curves"]["ref_SablesFins"][1, :],
-                    mode="lines",
-                    name="Sables Fins (50-100 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
-                    y=st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :],
-                    mode="lines",
-                    name="Sables Grossiers (>100 microns)",
-                )
-            )
-
-            fig.update_xaxes(type="log", tickformat=".1e", showgrid=True)
-            fig.update_layout(
-                # Ajuster la hauteur de la figure en fonction du nombre de plots
-                height=500,
-                xaxis_title=" grain diametere (micrometers, log-scale)",
-            )
-            fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
-
-            st.plotly_chart(fig)
-
-            st.markdown(
-                "For the peak located between 20 and 50 $\\mu m$ we can choose between 3 different reference curves :"
-            )
-            st.markdown(" - Limons Grossier")
-            st.markdown(" - Limons Grossier-Loess")
-            st.markdown(" - Limons Loess")
-
-            fig = go.Figure()
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_LimonsGrossiers"][0, :],
-                    y=st.session_state["ref_curves"]["ref_LimonsGrossiers"][1, :],
-                    mode="lines",
-                    name="Limons Grossiers",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][0, :],
-                    y=st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][1, :],
-                    mode="lines",
-                    name="Limons Grossiers-Loess",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_Loess"][0, :],
-                    y=st.session_state["ref_curves"]["ref_Loess"][1, :],
-                    mode="lines",
-                    name="Loess",
-                )
-            )
-
-            fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
-            fig.update_layout(
-                # Ajuster la hauteur de la figure en fonction du nombre de plots
-                height=500,
-                xaxis_title=" grain diametere (micrometers, log-scale)",
-            )
-            fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
-
-            st.plotly_chart(fig)
-
-        st.subheader(
-            "Choice of the reference curve for the peak between 20 and 50 microns"
-        )
-        st.markdown(
-            """As explainend in the list of reference curves we can choose between three reference curves 
-                    (Limons grossier, Limon grossier-loess, Loess) for the peak between 20 and 50 $\\mu m$. Please 
-                    select bellow which reference curve to use in approximation."""
-        )
-        st.session_state["ref_20_50"] = st.radio(
-            "do no show",
-            [
-                "All 3 at the same time",
-                "Limons Grossiers",
-                "Limons Grossiers-Loess",
-                "Loess",
-            ],
-            label_visibility="hidden",
-        )
-
-        st.subheader(
-            "Algorithm to perform an approximation of X from the reference curves"
-        )
-        st.markdown(
-            """We're now going to find the best combinaisons of our reference curves to approximate 
-                    our observation X."""
-        )
-        st.markdown("- $M_{ref}$ is the matrix that contains the 8 reference curves.")
-        st.markdown(
-            "- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation."
-        )
-        st.markdown("So we have the following problem :")
-        st.latex(r""" A_{ref} = \arg \min_{A\geq 0} \Vert X-AM_{ref} \Vert_F^2 """)
-
-        if st.button("Perform estimations with reference curves"):
-
-            # Deleting other 20-50 microns that have not been selected
-            st.session_state["ref_curves_selected"] = st.session_state[
-                "ref_curves"
-            ].copy()
-            st.session_state["rc_label"] = [
-                "Argiles Fines",
-                "Argiles Grossier",
-                "Alterites",
-                "Sables Fins",
-                "Sables grossiers",
-                "Loess",
-                "Limon grossiers",
-                "Limons grossiers Loess",
-            ]
-            if st.session_state["ref_20_50"] == "Limons Grossiers":
-                del st.session_state["ref_curves_selected"]["ref_LimonsGrossiersLoess"]
-                del st.session_state["ref_curves_selected"]["ref_Loess"]
-                st.session_state["rc_label"][5] = "Limon grossiers"
-                st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
-            elif st.session_state["ref_20_50"] == "Limons Grossiers-Loess":
-                del st.session_state["ref_curves_selected"]["ref_LimonsGrossiers"]
-                del st.session_state["ref_curves_selected"]["ref_Loess"]
-                st.session_state["rc_label"][5] = "Limon grossiers Loess"
-                st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
-            elif st.session_state["ref_20_50"] == "Limons Grossiers-Loess":
-                del st.session_state["ref_curves_selected"]["ref_LimonsGrossiersLoess"]
-                del st.session_state["ref_curves_selected"]["ref_LimonsGrossiers"]
-                st.session_state["rc_label"][5] = "Loess"
-                st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
-            # Do nothing if all 3 at the same time selected
-
-            # Gathering y from every reference curve into our M_ref matrix
-            M_ref = np.zeros(
-                (
-                    len(st.session_state["ref_curves_selected"]),
-                    st.session_state["ref_curves_selected"][
-                        "ref_ArgilesClassiques"
-                    ].shape[1],
-                )
-            )
-            for i, ref_curve in enumerate(st.session_state["ref_curves_selected"]):
-                M_ref[int(i), :] = st.session_state["ref_curves_selected"][ref_curve][
-                    1, :
-                ]
-
-            # A_ref is the mimimal argument of the optimisation problem
-            X = st.session_state["granulometrics"].to_numpy()
-            A_ref = X @ M_ref.T @ np.linalg.inv(M_ref @ M_ref.T)
-
-            # Performing minimalization with CVXPY to compare
-            # Declaration of our minimization variable A
-            A = cp.Variable((X.shape[0], M_ref.shape[0]))
-            # Constraint A to be positive
-            constraints = [A >= 0]
-            objective = cp.Minimize(
-                cp.norm(X - A @ M_ref, "fro") ** 2
-            )  # Objective function
-            # problem = cp.Problem(objective)                        # optim without constraint to compare with our direct solution
-            # Definition of our problem
-            problem = cp.Problem(objective, constraints)
-            problem.solve(
-                solver=cp.SCS, verbose=True, eps=1e-10, max_iters=10000
-            )  # Calling solver
-            A_ref_solv = A.value  # We get the result
-
-            # X_ref the approximations of our observations with ref_curves
-            X_ref = pd.DataFrame(
-                A_ref_solv @ M_ref,
-                columns=st.session_state["granulometrics"].columns,
-                index=st.session_state["granulometrics"].index,
-            )
-
-            # df for the proportions
-            RC_areas = np.apply_along_axis(trapeze_areas, 1, M_ref).reshape(
-                (A_ref_solv.shape[1])
-            )  # compute areas of each EM
-            Prop = A_ref_solv * RC_areas
-            Prop = np.apply_along_axis(lambda x: x / np.sum(x) * 100, 1, Prop)
-
-            # naming the columns of Prop with regards of where the peak is located for each EM
-            st.session_state["Prop_rc"] = pd.DataFrame(
-                Prop,
-                index=st.session_state["granulometrics"].index,
-                columns=st.session_state["rc_label"],
-            )
-
-            # Approximation errors l2
-            err2_approx_rc = np.sum(
-                np.linalg.norm(X_ref - st.session_state["granulometrics"], axis=1)
-            )
-            # L1-relativ norm of each approximations
-            st.session_state["Prop_rc"]["L1_rel_norm (%)"] = X_ref.apply(
-                lambda row: L1_relative(row.values, row.name), axis=1
-            )
-            # L1-relativ mean
-            errL1_approx_rc = np.mean(st.session_state["Prop_rc"]["L1_rel_norm (%)"])
-
-            X_ref.index = X_ref.index.map(lambda x: f"r{x}")  # adding "r" before
-
-            # in this case we replace the old reference curves approximation
-            if st.session_state["rc_flag"]:
-                for ind in X_ref.index:
-                    st.session_state["X-X_hat-X_ref"].loc[ind] = X_ref.loc[ind]
-
-            else:  # easier case : there isn't already a reference curves approximation
-                st.session_state["X-X_hat-X_ref"] = pd.concat(
-                    [st.session_state["X-X_hat-X_ref"], X_ref], axis=0
-                )
-                st.session_state["rc_flag"] = True  # They are now result
-
-            st.success("Approximation succeed")
-            # Displaying approx errors
-            col1, col2 = st.columns(2)
-            with col1:
-                st.latex(r""" \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 """)
-            with col2:
-                st.metric(
-                    "sum of quadratic errors",
-                    value=f"{err2_approx_rc:.4}",
-                    label_visibility="visible",
-                )
-            col1, col2 = st.columns(2)
-            with col1:
-                st.latex(
-                    r""" \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
-                )
-            with col2:
-                st.metric(
-                    "mean of L1-relative errors (%)",
-                    value=f"{errL1_approx_rc:.3}%",
-                    label_visibility="visible",
-                )
 
 
 with tab_result:
@@ -1637,21 +1676,21 @@ with tab_result:
             key="selected_obs_labels",
         )
     with col2:
-        st.checkbox(
+        st.toggle(
             "Display NMF-approximations",
             key="flag_nmf_approx",
             value=False,
             disabled=not st.session_state["nmf_flag"],
         )
     with col3:
-        st.checkbox(
+        st.toggle(
             "Display approximations with reference curves",
             key="flag_rc_approx",
             value=False,
             disabled=not st.session_state["rc_flag"],
         )
     with col4:
-        st.checkbox(
+        st.toggle(
             "Display approximations with discrete dictionnary (NN-LASSO)",
             key="flag_nnlasso_approx",
             value=False,
