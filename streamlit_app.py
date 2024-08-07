@@ -10,7 +10,6 @@ import plotly.graph_objects as go
 import cvxpy as cp
 from multiprocessing import Pool
 from functools import partial
-import openpyxl
 
 # from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm
 from plotly.subplots import make_subplots
@@ -48,6 +47,10 @@ if "granulometrics" not in st.session_state:
         "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, engine='openpyxl')    
        
 # region initialisation of session variables
+if 'sep_input' not in st.session_state:
+    st.session_state['sep_input'] = 'tabulation'
+if 'dec_input' not in st.session_state:
+    st.session_state['dec_input'] = 'comma'
 if "flag_comparaison_curves_importation" not in st.session_state:
     st.session_state["flag_comparaison_curves_importation"] = False
 if "dd_flag" not in st.session_state:
@@ -195,22 +198,57 @@ with tab_data:
     with col02:
         st.header("Presentation of our granulometric data")
 
-        st.subheader("Our Data :s")
-        st.dataframe(st.session_state['granulometrics'])
+        st.subheader("Our Data :")
+        st.dataframe(st.session_state['raw_data'])
 
         st.subheader("Add new observation")
 
         with st.form(key='input_obs_form'):
-            col1, col2 = st.columns([1,3])
+            col1, col2 = st.columns(2)
             with col1:
-                nb_line = st.number_input('Number of observations :', value = 1, min_value= 1, max_value = 10000)
+                st.radio("**Separator**",
+                        options = ['**⇥**', '**␣**', '**,**', '**;**'],
+                        captions = ['tabulation', 'space', 'comma', 'semicolon'],
+                        index = 0, 
+                        key = st.session_state['sep_input'])
             with col2:
-                sep = st.radio("Separator", options = ['tabulation', 'space', 'comma', 'semicolon'])
-            vecteur = st.text_area('Raw data (with metadata), separated by tabulations :', height=150)  # Utiliser un textarea pour plus de commodité
+                st.radio("**Decimal**",
+                        options = ['**,**', '**.**'],
+                        captions = ['comma', 'dot'],
+                        index = 0,
+                        key = st.session_state['dec_input'])
+            input_data = st.text_area('Raw data (with metadata), separated by tabulations :', height=150)  # Utiliser un textarea pour plus de commodité
             submit_button = st.form_submit_button(label='Add')
 
+            st.write(st.session_state['dec_input'])
+
+
             if submit_button:
-                None
+                # dict to translate sep option into ASCII symbol
+                sep_dict = {
+                    'tabulation': '\t',
+                    'space': ' ',
+                    'comma': ',',
+                    'semicolon': ';'
+                }
+                dec_dict = {
+                    'comma': ',',
+                    'dot': '.'
+                }
+                df_input = pd.DataFrame(columns = st.session_state['raw_data'].columns)
+                lines = input_data.strip().split('\n')
+                
+                for line in lines:
+                    row = line.split(sep_dict[st.session_state['sep_input']])
+                    row[4:] = [float(val.replace(dec_dict[st.session_state['dec_input']], '.')) for val in row[4:]]   # convert data point into float
+                    df_input.loc[len(df_input)] = row.copy()    # adding the line (copy maybe useless)
+                
+                st.session_state['raw_data'] = pd.concat([st.session_state['raw_data'],df_input])
+                st.dataframe(st.session_state['raw_data'])
+                st.session_state['raw_data'].to_excel("data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index = False)
+                st.success('Data loaded, please reload the page to save changes')
+
+
 
         st.subheader("Remove observation")
         st.markdown("Choose which label to remove and then click on \"Confirm\". Please reload the page to save change !")
