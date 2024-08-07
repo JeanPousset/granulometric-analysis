@@ -265,6 +265,24 @@ with tab_data:
                     st.session_state['raw_data'].to_excel("data_granulometry_03_06_24.xlsx", sheet_name=0, index = False)
                     st.success("Removing asked, now reload the page")
                     st.dataframe(st.session_state['raw_data'])
+        
+        st.subheader("Export Data")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.text_input("Enter file name without extension", key = 'output_file_name', value = "granulometric_data")
+        with col2:
+            st.radio("File format", options = ["**Excel (.xlsx)**","CSV (.csv)"])
+        with col3:
+           st.radio("data format", options = ["**Cumulative**","**Distributive**"], help = "Shape of observation curves : cumulative (raw) or disrtibutive (transformation)") 
+        with col4:
+            st.radio("",options = ["**Select observations**","**export all**"],label_visibility='hidden', key = 'output_opt')
+        
+        with st.expander("**:red[Reset data]**"):
+            st.markdown("""This button allows you to reset granulometrics data to the original 
+                    in case of error when updating data. """)
+            st.warning("Are you sure ? You will not be able to retrieve changes made to the database")
+            if st.button("Confirm reset"):
+                st.success("Database reset made, please reload the page to apply changes.")
 
         st.header("Approximation of our observation by reference curves")
         st.markdown(
