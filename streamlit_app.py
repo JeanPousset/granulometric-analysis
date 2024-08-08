@@ -25,7 +25,9 @@ st.set_page_config(page_title="NMF test", layout="wide")
 st.title("Methods for gromulometric analysis")
 
 # removing old export file
-subprocess.run(f'rm -f exports/*', shell=True, check=True)
+if not 'clean_exports_flag' in st.session_state:
+    subprocess.run(f'rm -f exports/*', shell=True, check=True)
+    st.session_state['clean_exports_flag'] = True
 
 
 # Loading observation data :
