@@ -562,9 +562,7 @@ with tab_discrete_dict:
 
             M = np.transpose(st.session_state["discrete_dictionnary"].to_numpy())
             # hyper-parameters
-            p_dg = 1
-            p_cs = 1
-            it_max = 1e3
+            it_max = 1e4
             MtM = np.dot(M.T, M)  # saving result to optimize
             eta = 2
             # Lipschitz constant of our objective function
@@ -601,9 +599,7 @@ with tab_discrete_dict:
 
             def DG(a, x, u, lambda_):
                 return (
-                    0.5 * np.linalg.norm(x - np.dot(M, a), 2) ** 2
-                    + lambda_ * np.linalg.norm(a, 1)
-                    + 0.5 * (np.linalg.norm(x - u, 2) ** 2 - np.linalg.norm(x, 2) ** 2)
+                    f_global(a, x, lambda_)+ 0.5 * (np.linalg.norm(x - u, 2) ** 2 - np.linalg.norm(x, 2) ** 2)
                 )
 
             def stop_criterions(a, x, lambda_):
@@ -614,7 +610,7 @@ with tab_discrete_dict:
                 # st.write(f"dg : {dg}")
                 return (
                     dg <= st.session_state["p_dg"]
-                    and cs <= dg <= st.session_state["p_cs"]
+                    and cs <= st.session_state["p_cs"]
                 )
             
             # Non-negative least square with projected gradient method
@@ -704,9 +700,6 @@ with tab_discrete_dict:
                     a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
                     return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
                         
-                        
-
-
             if st.session_state["nn_lasso_method"] == "FISTA with backtracking":
 
                 def decomposition_algo(x, lambda_):
@@ -734,10 +727,11 @@ with tab_discrete_dict:
                     # also the argmin of the approximation of F(x) at the given point y
                     def p_L(a, l):
                         z = a - (np.dot(MtM, a) - Mx) / l
-                        return np.sign(z) * np.maximum(
+                        res_neg =  np.sign(z) * np.maximum(
                             np.abs(z) - np.full(z.shape, lambda_ / l),
                             np.full(z.shape, 0),
                         )
+                        return np.maximum(res_neg, 0.0)
 
                     while not stop_criterions(a, x, lambda_) and it < it_max:
                         a1 = p_L(z, Li)
@@ -977,7 +971,6 @@ with tab_discrete_dict:
 
                     a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
                     return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
-
 
             if st.session_state["nn_lasso_method"] == "Projected gradient":
 
