@@ -4,11 +4,9 @@ import streamlit as st
 import time
 import json
 import random
-import matplotlib.pyplot as plt
 from sklearn.decomposition import NMF
 import plotly.graph_objects as go
 import cvxpy as cp
-from multiprocessing import Pool
 from functools import partial
 import subprocess
 
@@ -25,15 +23,15 @@ st.set_page_config(page_title="NMF test", layout="wide")
 st.title("Methods for gromulometric analysis")
 
 # removing old export file
-if not 'clean_exports_flag' in st.session_state:
-    subprocess.run(f'rm -f exports/*', shell=True, check=True)
+if  'clean_exports_flag' not in st.session_state:
+    subprocess.run(f"rm -f exports/*", shell=True, check=True)
     st.session_state['clean_exports_flag'] = True
 
 
 # Loading observation data :
 if "granulometrics" not in st.session_state:
     data = pd.read_excel(
-        "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, index_col=2, engine='openpyxl' 
+        "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, index_col=2, engine='openpyxl'
     )
     # Deletion of additional information
     data = data.drop(columns=["Dept", "Commune", "Type"])
@@ -51,9 +49,15 @@ if "granulometrics" not in st.session_state:
     st.session_state["granulometrics"] = data        # dataframe to use
     # dataframe to update the excel file (adding or removing observations)
     st.session_state["raw_data"] = pd.read_excel(
-        "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, engine='openpyxl')    
-       
+        "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, engine='openpyxl')
+
 # region initialisation of session variables
+if 'nmf_errors' not in st.session_state:
+    st.session_state['nmf_errors'] = pd.DataFrame(columns=["L1 relative error", "l2 error"])
+if 'dd_errors' not in st.session_state:
+    st.session_state['dd_errors'] = pd.DataFrame(columns=["L1 relative error", "l2 error"])
+if  'Prop_nmf' not in st.session_state:
+    st.session_state["Prop_nmf"] = pd.DataFrame()
 if 'export_available_flag' not in st.session_state:
     st.session_state['export_available_flag'] = False
 if 'sep_input' not in st.session_state:
@@ -64,8 +68,6 @@ if "flag_comparaison_curves_importation" not in st.session_state:
     st.session_state["flag_comparaison_curves_importation"] = False
 if "dd_flag" not in st.session_state:
     st.session_state["dd_flag"] = False
-if "nb_end_members" not in st.session_state:
-    st.session_state["nb_end_members"] = 8
 if "X-X_hat-X_ref" not in st.session_state:
     st.session_state["X-X_hat-X_ref"] = st.session_state["granulometrics"].copy()
     # to have the same columns as approximations
@@ -86,15 +88,7 @@ if "beta_r" not in st.session_state:
     st.session_state["beta_r"] = 1.5
 if "selected_label" not in st.session_state:
     st.session_state["selected_label"] = []
-if "A_df" not in st.session_state:
-    st.session_state["A_df"] = pd.DataFrame(
-        np.zeros(
-            (
-                st.session_state["granulometrics"].to_numpy().shape[0],
-                st.session_state["nb_end_members"],
-            )
-        )
-    )
+
 if "X-X_hat-X_ref" not in st.session_state:
     st.session_state["X-X_hat-X_ref"] = st.session_state["granulometrics"]
 # endregion
@@ -128,7 +122,8 @@ if "ref_curves" not in st.session_state:
     )
     st.session_state["scaled_ref_curves"] = (
         {}
-    )  # for ref curves that will be on the same scale as observations (for NN-LASSO)
+        # for ref curves that will be on the same scale as observations (for NN-LASSO)
+    )
     # st.session_state['scaled_ref_curves']['abscisses'] = st.session_state["ref_curves"]["ref_ArgilesFines"][0,:] # --> abscisses not necessary
     st.session_state["scaled_ref_curves"]["ref_ArgilesFines"] = (
         st.session_state["ref_curves"]["ref_ArgilesFines"][1, :] * 0.00101501
@@ -160,10 +155,11 @@ if "ref_curves" not in st.session_state:
 
 
 def trapeze_areas(x):
+    # adding log10 to abscisse to have equal error important over the whole abscisse axis
     return 0.5 * np.sum(
         (
-            st.session_state["granulometrics"].columns[1:]
-            - st.session_state["granulometrics"].columns[:-1]
+            np.log10(st.session_state["granulometrics"].columns[1:].astype(float).to_numpy())
+            - np.log10(st.session_state["granulometrics"].columns[:-1].astype(float).to_numpy())
         )
         * (x[1:] + x[:-1])
     )
@@ -192,12 +188,12 @@ materials = {
 # endregion
 
 
-tab_data,tab_continous_dict, tab_discrete_dict, tab_basic, tab_rc, tab_result = st.tabs(
+tab_data, tab_continous_dict, tab_discrete_dict, tab_NMF, tab_rc, tab_result = st.tabs(
     [
-        "Granulometric data",
+        "Introduction",
         "Continuous dictionary",
         "Discrete dictionnary",
-        "Basic NMF (with penalization)",
+        "Unsupervised",
         "Reference curves",
         "Results",
     ]
@@ -206,11 +202,13 @@ tab_data,tab_continous_dict, tab_discrete_dict, tab_basic, tab_rc, tab_result = 
 with tab_data:
     col01, col02, col03 = st.columns([1, 3, 1])
     with col02:
-        st.header("Presentation of our granulometric data")
+        st.markdown("<h2 style='text-align: center;'>Presentation of our granulometric data</h2>", unsafe_allow_html=True)
 
-        st.subheader("Our Data :")
-        st.dataframe(st.session_state['granulometrics'])
+        st.write("*[ToDo] : add little explication of our data + plot of few curve and illustration of components*")
+        with st.expander("**View data set**"):
+            st.dataframe(st.session_state['granulometrics'])
 
+        st.markdown("---")
         st.header("Data management")
 
         with st.expander("Add, remove, export or reset data"):
@@ -221,24 +219,26 @@ with tab_data:
                 col1, col2 = st.columns(2)
                 with col1:
                     st.radio("**Separator**",
-                            options = ['**⇥**', '**␣**', '**,**', '**;**'],
-                            captions = ['tabulation', 'space', 'comma', 'semicolon'],
-                            index = 0, 
-                            key = st.session_state['sep_input'])
+                             options=['**⇥**', '**␣**', '**,**', '**;**'],
+                             captions=['tabulation', 'space',
+                                       'comma', 'semicolon'],
+                             index=0,
+                             key=st.session_state['sep_input'])
                 with col2:
                     st.radio("**Decimal**",
-                            options = ['**,**', '**.**'],
-                            captions = ['comma', 'dot'],
-                            index = 0,
-                            key = st.session_state['dec_input'])
-                input_data = st.text_area('Raw data (with metadata), separated by tabulations :', height=150)  # Utiliser un textarea pour plus de commodité
-                
+                             options=['**,**', '**.**'],
+                             captions=['comma', 'dot'],
+                             index=0,
+                             key=st.session_state['dec_input'])
+                # Utiliser un textarea pour plus de commodité
+                input_data = st.text_area(
+                    'Raw data (with metadata), separated by tabulations :', height=150)
+
                 col1, col2 = st.columns([9, 1])
                 with col2:
                     submit_button = st.form_submit_button(label='Add')
 
                 st.write(st.session_state['dec_input'])
-
 
                 if submit_button:
                     # dict to translate sep option into ASCII symbol
@@ -252,114 +252,142 @@ with tab_data:
                         'comma': ',',
                         'dot': '.'
                     }
-                    df_input = pd.DataFrame(columns = st.session_state['raw_data'].columns)
+                    df_input = pd.DataFrame(
+                        columns=st.session_state['raw_data'].columns)
                     lines = input_data.strip().split('\n')
-                    
+
                     for line in lines:
-                        row = line.split(sep_dict[st.session_state['sep_input']])
-                        row[4:] = [float(val.replace(dec_dict[st.session_state['dec_input']], '.')) for val in row[4:]]   # convert data point into float
-                        df_input.loc[len(df_input)] = row.copy()    # adding the line (copy maybe useless)
-                    
-                    st.session_state['raw_data'] = pd.concat([st.session_state['raw_data'],df_input])
+                        row = line.split(
+                            sep_dict[st.session_state['sep_input']])
+                        row[4:] = [float(val.replace(dec_dict[st.session_state['dec_input']], '.'))
+                                   # convert data point into float
+                                   for val in row[4:]]
+                        # adding the line (copy maybe useless)
+                        df_input.loc[len(df_input)] = row.copy()
+
+                    st.session_state['raw_data'] = pd.concat(
+                        [st.session_state['raw_data'], df_input])
                     st.dataframe(st.session_state['raw_data'])
-                    st.session_state['raw_data'].to_excel("data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index = False)
-                    st.success('Data loaded, please reload the page to save changes')
-
-
+                    st.session_state['raw_data'].to_excel(
+                        "data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
+                    st.success(
+                        'Data loaded, please reload the page to save changes')
 
             st.subheader("Remove observation")
-            st.markdown("Choose which label to remove and then click on \"Confirm\". Please reload the page to save change !")
+            st.markdown(
+                "Choose which label to remove and then click on \"Confirm\". Please reload the page to save change !")
             col1, col2 = st.columns(2)
 
             with col1:
-                st.multiselect("",options=st.session_state["granulometrics"].index, key = "labels_to_remove", label_visibility='collapsed')
+                st.multiselect(
+                    "", options=st.session_state["granulometrics"].index, key="labels_to_remove", label_visibility='collapsed')
 
             with col2:
                 if st.button("Confirm"):
-                        # Select observation execpt those to be removed
-                        st.session_state['raw_data'] = st.session_state['raw_data'][~st.session_state['raw_data']['Echt'].isin(st.session_state['labels_to_remove'])]
-                        # Update the excel file 
-                        st.session_state['raw_data'].to_excel("data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index = False)
-                        st.success("Removing asked, now reload the page")
-                        st.dataframe(st.session_state['raw_data'])
-            
+                    # Select observation execpt those to be removed
+                    st.session_state['raw_data'] = st.session_state['raw_data'][~st.session_state['raw_data']['Echt'].isin(
+                        st.session_state['labels_to_remove'])]
+                    # Update the excel file
+                    st.session_state['raw_data'].to_excel(
+                        "data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
+                    st.success("Removing asked, now reload the page")
+                    st.dataframe(st.session_state['raw_data'])
+
             st.subheader("Data exportation")
-            st.toggle("Export all", value = True, key = 'flag_output_all')
+            st.toggle("Export all", value=True, key='flag_output_all')
             with st.form(key='output_obs_form'):
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.text_input("Enter file name *(without extension)*", key = 'output_file_name', value = "granulometric_data")
+                    st.text_input("Enter file name *(without extension)*",
+                                  key='output_file_name', value="granulometric_data")
                 with col2:
-                    st.radio("File format", options = ["**Excel (.xlsx)**","CSV (.csv)"], key = 'output_ext', help = "In .xlsx, float decimal is comma **,** . In .csv, float decimal is dot **.**")
+                    st.radio("File format", options=["**Excel (.xlsx)**", "CSV (.csv)"], key='output_ext',
+                             help="In .xlsx, float decimal is comma **,** . In .csv, float decimal is dot **.**")
                 with col3:
-                    st.radio("data format", options = ["**Cumulative**","**Distributive**"], key = 'output_data_format',help = "Shape of observation curves : cumulative (raw) or disrtibutive (transformation)") 
-            
-                if not st.session_state['flag_output_all']: # case with only few obs
-                    st.multiselect("Select observation to export :", options = st.session_state['granulometrics'].index, key = 'output_labels')
-                
+                    st.radio("data format", options=["**Cumulative**", "**Distributive**"], key='output_data_format',
+                             help="Shape of observation curves : cumulative (raw) or disrtibutive (transformation)")
+
+                # case with only few obs
+                if not st.session_state['flag_output_all']:
+                    st.multiselect("Select observation to export :",
+                                   options=st.session_state['granulometrics'].index, key='output_labels')
+
                 col1, col2 = st.columns([8, 1])
                 with col2:
-                    submit_button_export = st.form_submit_button(label='Export')
-                
-                if submit_button_export:                
-                    
+                    submit_button_export = st.form_submit_button(
+                        label='Export')
+
+                if submit_button_export:
+
                     if st.session_state['output_data_format'] == "**Cumulative**":
                         # cumulative output
-                        df_export = pd.read_excel("data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, index_col=2, engine='openpyxl')
-                    else :  # distributive (transformation)
+                        df_export = pd.read_excel(
+                            "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, index_col=2, engine='openpyxl')
+                    else:  # distributive (transformation)
                         df_export = st.session_state['granulometrics']
 
                     # export all
                     if st.session_state['flag_output_all']:
                         if st.session_state['output_ext'] == "**Excel (.xlsx)**":
-                            df_export.to_excel("exports/"+st.session_state['output_file_name']+'.xlsx', sheet_name='Feuil1', index = False)
+                            df_export.to_excel(
+                                "exports/"+st.session_state['output_file_name']+'.xlsx', sheet_name='Feuil1', index=False)
                         else:
-                            df_export.to_csv("exports/"+st.session_state['output_file_name']+'.csv',float_format='%.4f', index=False)
+                            df_export.to_csv(
+                                "exports/"+st.session_state['output_file_name']+'.csv', float_format='%.4f', index=False)
                     # case with only few label
                     else:
                         if st.session_state['output_ext'] == "**Excel (.xlsx)**":
-                            df_export.loc[st.session_state['output_labels']].to_excel("exports/"+st.session_state['output_file_name']+'.xlsx', sheet_name='Feuil1', index = False)
+                            df_export.loc[st.session_state['output_labels']].to_excel(
+                                "exports/"+st.session_state['output_file_name']+'.xlsx', sheet_name='Feuil1', index=False)
                         else:
-                            df_export.loc[st.session_state['output_labels']].to_csv("exports/"+st.session_state['output_file_name']+'.csv',float_format='%.4f', index=False)
+                            df_export.loc[st.session_state['output_labels']].to_csv(
+                                "exports/"+st.session_state['output_file_name']+'.csv', float_format='%.4f', index=False)
 
                     # session variable to handle download button next
-                    st.session_state['export_available_flag'] = True 
+                    st.session_state['export_available_flag'] = True
                     st.session_state['name_export_file'] = st.session_state['output_file_name']
                     if st.session_state['output_ext'] == "**Excel (.xlsx)**":
                         st.session_state['export_file_ext'] = '.xlsx'
-                    else :
+                    else:
                         st.session_state['export_file_ext'] = '.csv'
-                    
+
                     st.success("Export file created")
-            
+
             def get_export_file(file_name):
                 with open(file_name, "rb") as file:
                     return file.read()
 
             if st.session_state['export_available_flag'] == True:
-                export_file_name = st.session_state['name_export_file']+st.session_state['export_file_ext']
+                export_file_name = st.session_state['name_export_file'] + \
+                    st.session_state['export_file_ext']
                 if st.session_state['export_file_ext'] == '.xlsx':
-                    st.download_button("Download export file (.xlsx)", data = get_export_file("exports/"+export_file_name), mime = "application/octet-stream", file_name = export_file_name)
+                    st.download_button("Download export file (.xlsx)", data=get_export_file(
+                        "exports/"+export_file_name), mime="application/octet-stream", file_name=export_file_name)
                 else:
-                    st.download_button("Download export file (.csv)", data = get_export_file("exports/"+export_file_name), mime = "text/csv", file_name = export_file_name)
-            
+                    st.download_button("Download export file (.csv)", data=get_export_file(
+                        "exports/"+export_file_name), mime="text/csv", file_name=export_file_name)
+
             st.subheader("**:red[Database reset]**")
             st.markdown("""This button allows you to reset granulometrics data to the original 
                     in case of error when updating data. """)
-            st.warning("Are you sure ? You will not be able to retrieve changes made to the database")
-            col1, col2 = st.columns([4.6,1])
+            st.warning(
+                "Are you sure ? You will not be able to retrieve changes made to the database")
+            col1, col2 = st.columns([4.6, 1])
             with col2:
                 if st.button("Confirm reset"):
-                    df_save = pd.read_excel("data_save_for_reset.xlsx", sheet_name=0, header=0, engine='openpyxl')
-                    df_save.to_excel("data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index = False)
-                    st.success("Database reset made, please reload the page to apply changes.")
-
+                    df_save = pd.read_excel(
+                        "data_save_for_reset.xlsx", sheet_name=0, header=0, engine='openpyxl')
+                    df_save.to_excel(
+                        "data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
+                    st.success(
+                        "Database reset made, please reload the page to apply changes.")
 
 
 with tab_continous_dict:
     col01, col02, col03 = st.columns([1, 3, 1])
     with col02:
-        st.header("Decomposition onto a continuous dictionnary")
+        st.markdown("<h1 style='text-align: center;'>Continuous dictionnary</h1>", unsafe_allow_html=True)
+        st.markdown("---")        
         st.subheader("Graphique exemple of the method's interest")
 
         st.markdown(
@@ -367,7 +395,7 @@ with tab_continous_dict:
         )
 
         st.markdown(
-            f""" The first plot is the best approximation that is possible if we use a discrete dictionnary made 
+            f""" The first plot is the best approximation that is possible if we use a discrete dictionnary made
                     by replicating curve and translate them by step : $\Delta = 1$. We can see that the approximation can't
                     overlap the observation because of because of this non-continuity."""
         )
@@ -413,7 +441,8 @@ with tab_continous_dict:
             height=500,
             width=700,
         )
-        fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+        fig.update_traces(
+            hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
         st.plotly_chart(fig)
 
         fig = go.Figure()
@@ -443,14 +472,16 @@ with tab_continous_dict:
             width=700,
             # showlegend=False,
         )
-        fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+        fig.update_traces(
+            hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
         st.plotly_chart(fig)
 
 
 with tab_discrete_dict:
     col01, col02, col03 = st.columns([1, 3, 1])
     with col02:
-        st.header("Decomposition onto a discrete dictionnary")
+        st.markdown("<h1 style='text-align: center;'>Discrete dictionnary</h1>", unsafe_allow_html=True)
+        st.markdown("---")        
         st.markdown(
             r"""In this section we try do decompose our observations with a discrete dictionnary 
                     of unimodale curves $(\mathcal{M})$ obtained by duplicating the reference curves and shifting the spike
@@ -521,9 +552,11 @@ with tab_discrete_dict:
                     if peak_loc < materials[mat]:
                         mat_rc = mat
                         # index of the first mesurement point for the interval of this rc
-                        first_ind = mesurement_points.get_loc(materials[mat_prec])
+                        first_ind = mesurement_points.get_loc(
+                            materials[mat_prec])
                         # index of the last mesurement point for the interval of this rc
-                        last_ind = mesurement_points.get_loc(materials[mat]) - 1
+                        last_ind = mesurement_points.get_loc(
+                            materials[mat]) - 1
                         rel_peak_ind = peak_ind - first_ind
                         rel_last_ind = last_ind - first_ind
                         break
@@ -553,14 +586,16 @@ with tab_discrete_dict:
                 )
                 for i in range(st.session_state["discrete_dictionnary"].shape[0]):
                     st.session_state["aeras_dd_curves"][i] = trapeze_areas(
-                        st.session_state["discrete_dictionnary"].iloc[i].to_numpy()
+                        st.session_state["discrete_dictionnary"].iloc[i].to_numpy(
+                        )
                     )
 
             # endregion
 
             # region functions
 
-            M = np.transpose(st.session_state["discrete_dictionnary"].to_numpy())
+            M = np.transpose(
+                st.session_state["discrete_dictionnary"].to_numpy())
             # hyper-parameters
             it_max = 1e4
             MtM = np.dot(M.T, M)  # saving result to optimize
@@ -599,7 +634,8 @@ with tab_discrete_dict:
 
             def DG(a, x, u, lambda_):
                 return (
-                    f_global(a, x, lambda_)+ 0.5 * (np.linalg.norm(x - u, 2) ** 2 - np.linalg.norm(x, 2) ** 2)
+                    f_global(a, x, lambda_) + 0.5 * (np.linalg.norm(x -
+                                                                    u, 2) ** 2 - np.linalg.norm(x, 2) ** 2)
                 )
 
             def stop_criterions(a, x, lambda_):
@@ -612,47 +648,56 @@ with tab_discrete_dict:
                     dg <= st.session_state["p_dg"]
                     and cs <= st.session_state["p_cs"]
                 )
-            
+
             # Non-negative least square with projected gradient method
-            def NN_LS_proj_grad(Z, x_obs): 
+            def NN_LS_proj_grad(Z, x_obs):
                 a_ls = np.ones(Z.shape[1])
                 prec_LS = 1e-3
                 it_max_LS = 1e4
                 err = prec_LS+1
                 it = 0
-                ZtZ = np.dot(Z.T,Z)
-                Zx = np.dot(Z.T,x_obs)
-                rho_LS = 1 / (2 * np.real(np.max(np.linalg.eigvals(ZtZ)))) # 1 / Lipschitz constant of Z
+                ZtZ = np.dot(Z.T, Z)
+                Zx = np.dot(Z.T, x_obs)
+                # 1 / Lipschitz constant of Z
+                rho_LS = 1 / (2 * np.real(np.max(np.linalg.eigvals(ZtZ))))
 
                 while err > prec_LS and it < it_max_LS:
-                    a_ls_1 = np.maximum(0.0 ,a_ls - rho_LS * (np.dot(ZtZ,a_ls)-Zx))
+                    a_ls_1 = np.maximum(
+                        0.0, a_ls - rho_LS * (np.dot(ZtZ, a_ls)-Zx))
                     err = np.linalg.norm(a_ls_1-a_ls)
                     a_ls = a_ls_1
                     it += 1
 
                 if it == it_max_LS:
-                    st.warning('Non convergence of NN-LS for approximation reconstruction ')
+                    st.warning(
+                        'Non convergence of NN-LS for approximation reconstruction ')
 
-                return a_ls,it
+                return a_ls, it
 
             # Reconstruction of the observation with least square problem to avoid bias due to l1 penality
             def reconstruction_LS(a, x_obs):
 
-                Z = M[:, a > 0.0]                        # construction of Z matix in the ||x-Zc||^2 minimisation
-                if Z.shape[1] == 0:                      
-                    return a, np.zeros_like(x_obs), 0    # case of empty solution
-                a_tmp,it_ls = NN_LS_proj_grad(Z,x_obs)   # resolving least-square problem (a_tmp is a small vector)
-                approx_ls = np.dot(Z,a_tmp)              # approximation construction
-                a_ls = np.zeros(a.shape)                 # spare vector, usefull to label our reconstruction 
-                k=0                                      #
+                # construction of Z matix in the ||x-Zc||^2 minimisation
+                Z = M[:, a > 0.0]
+                if Z.shape[1] == 0:
+                    # case of empty solution
+                    return a, np.zeros_like(x_obs), 0
+                # resolving least-square problem (a_tmp is a small vector)
+                a_tmp, it_ls = NN_LS_proj_grad(Z, x_obs)
+                # approximation construction
+                approx_ls = np.dot(Z, a_tmp)
+                # spare vector, usefull to label our reconstruction
+                a_ls = np.zeros(a.shape)
+                k = 0                                      #
                 for i in range(len(a_ls)):
                     if a[i] > 0.0:
                         a_ls[i] = a_tmp[k]
-                        if a_tmp[k] < 0.0 :
-                            st.error(f"Warning !!!! : ls reconstruction produced negativ coefficient {a_tmp[k]=}")
+                        if a_tmp[k] < 0.0:
+                            st.error(
+                                f"Warning !!!! : ls reconstruction produced negativ coefficient {a_tmp[k]=}")
                         k += 1
 
-                return a_ls,approx_ls,it_ls
+                return a_ls, approx_ls, it_ls
 
             # endregion
 
@@ -661,27 +706,27 @@ with tab_discrete_dict:
             if st.session_state["nn_lasso_method"] == "NN gready algo":
 
                 def decomposition_algo(x, lambda_):
-                    
+
                     # initialization
-                    a0 = np.zeros(M.shape[1]) 
-                    a0[random.randint(0,len(a0)-1)] = lambda_
+                    a0 = np.zeros(M.shape[1])
+                    a0[random.randint(0, len(a0)-1)] = lambda_
                     a = a0
-                    #a = np.zeros(M.shape[1])
+                    # a = np.zeros(M.shape[1])
                     Mx = np.dot(M.T, x).reshape(a.shape)
                     it = 0
 
                     for i in range(M.shape[1]):
-                    
+
                         # STEP 1
-                        j_star = np.argmin(np.dot(MtM,a)-Mx)
+                        j_star = np.argmin(np.dot(MtM, a)-Mx)
                         a_1 = np.zeros(a.shape)
                         a_1[j_star] = 1
 
                         # STEP 2
-                        q = (lambda_ * a_1 - a) 
+                        q = (lambda_ * a_1 - a)
                         if np.linalg.norm(q) == 0:
                             Γ = 0   # case where λ*a_1 = a
-                        Γ = - np.dot(q,a) / (np.linalg.norm(q,2) ** 2)
+                        Γ = - np.dot(q, a) / (np.linalg.norm(q, 2) ** 2)
                         if Γ < 0:
                             Γ_t = 0
                         elif Γ > 1:
@@ -693,13 +738,15 @@ with tab_discrete_dict:
                         a = a + Γ_t * q
 
                         it += 1
-                    
+
                     if it == it_max:
                         st.warning("Non-convergence for NN gready method")
 
-                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
-                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
-                        
+                    # reconstruction with least-square problem to cancel bias
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a, x)
+                    # argmin, approx, and nb of iterations
+                    return a_ls, approx_ls.flatten(), it, it_ls
+
             if st.session_state["nn_lasso_method"] == "FISTA with backtracking":
 
                 def decomposition_algo(x, lambda_):
@@ -727,7 +774,7 @@ with tab_discrete_dict:
                     # also the argmin of the approximation of F(x) at the given point y
                     def p_L(a, l):
                         z = a - (np.dot(MtM, a) - Mx) / l
-                        res_neg =  np.sign(z) * np.maximum(
+                        res_neg = np.sign(z) * np.maximum(
                             np.abs(z) - np.full(z.shape, lambda_ / l),
                             np.full(z.shape, 0),
                         )
@@ -744,11 +791,13 @@ with tab_discrete_dict:
                         it += 1
 
                     if it == it_max:
-                        st.warning("Non-convergence for projected gradient method")
+                        st.warning(
+                            "Non-convergence for projected gradient method")
 
-                    
-                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
-                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+                    # reconstruction with least-square problem to cancel bias
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a, x)
+                    # argmin, approx, and nb of iterations
+                    return a_ls, approx_ls.flatten(), it, it_ls
 
             if st.session_state['nn_lasso_method'] == "NN FW step 1 modification":
                 def decomposition_algo(x, lambda_):
@@ -756,7 +805,7 @@ with tab_discrete_dict:
                     w = np.linalg.norm(x, 2) ** 2 / (2 * lambda_)
                     w_bar = w
                     it = 0
-                    M_prime = np.hstack((M,-M))
+                    M_prime = np.hstack((M, -M))
                     f = partial(f_global, x_=x, lambda_=lambda_)
 
                     # avoid having to compute it every time
@@ -811,8 +860,10 @@ with tab_discrete_dict:
                     if it == it_max:
                         st.warning("Non-convergence for Frank-Wolfe method")
 
-                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
-                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+                    # reconstruction with least-square problem to cancel bias
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a, x)
+                    # argmin, approx, and nb of iterations
+                    return a_ls, approx_ls.flatten(), it, it_ls
 
             if st.session_state["nn_lasso_method"] == "NN FW (proj with max 0)":
 
@@ -845,9 +896,10 @@ with tab_discrete_dict:
                         else:
                             canonic_vec = np.zeros(a.shape)
                             canonic_vec[i_star] = 1
-                            if not np.array_equal(np.maximum(canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar,0),canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar) :
+                            if not np.array_equal(np.maximum(canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar, 0), canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar):
                                 st.write(" Difference")
-                            a_pre = np.maximum(canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar,0)
+                            a_pre = np.maximum(
+                                canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar, 0)
                             w_pre = w_bar
 
                         # STEP2:
@@ -875,8 +927,10 @@ with tab_discrete_dict:
                         fegh = 3
                         st.warning("Non-convergence for Frank-Wolfe method")
 
-                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
-                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+                    # reconstruction with least-square problem to cancel bias
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a, x)
+                    # argmin, approx, and nb of iterations
+                    return a_ls, approx_ls.flatten(), it, it_ls
 
             if st.session_state["nn_lasso_method"] == "Frank-Wolfe":
 
@@ -909,7 +963,8 @@ with tab_discrete_dict:
                         else:
                             canonic_vec = np.zeros(a.shape)
                             canonic_vec[i_star] = 1
-                            a_pre = canonic_vec * np.sign(np.dot(m_i_star, r)) * w_bar
+                            a_pre = canonic_vec * \
+                                np.sign(np.dot(m_i_star, r)) * w_bar
                             w_pre = w_bar
 
                         # STEP2:
@@ -937,8 +992,10 @@ with tab_discrete_dict:
                         fegh = 3
                         st.warning("Non-convergence for Frank-Wolfe method")
 
-                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
-                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+                    # reconstruction with least-square problem to cancel bias
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a, x)
+                    # argmin, approx, and nb of iterations
+                    return a_ls, approx_ls.flatten(), it, it_ls
 
             if (
                 st.session_state["nn_lasso_method"]
@@ -953,24 +1010,30 @@ with tab_discrete_dict:
 
                     def prox_l1(z, t):
                         return np.sign(z) * np.maximum(
-                            np.abs(z) - np.full(z.shape, t), np.full(z.shape, 0)
+                            np.abs(z) - np.full(z.shape,
+                                                t), np.full(z.shape, 0)
                         )
 
                     while not stop_criterions(a, x, lambda_) and it < it_max:
-                        a1 = prox_l1(a - (np.dot(MtM, a) - Mx) / Li, lambda_ / Li)
+                        a1 = prox_l1(a - (np.dot(MtM, a) - Mx) /
+                                     Li, lambda_ / Li)
                         while f(a1, x, lambda_) > f_hat(a1, a, x, lambda_):
                             # st.write(f"Multplying Li by {eta}")
                             Li = eta * Li
-                            a1 = prox_l1(a - (np.dot(MtM, a) - Mx) / Li, lambda_ / Li)
-                        st.write(f"{Li = }")
+                            a1 = prox_l1(
+                                a - (np.dot(MtM, a) - Mx) / Li, lambda_ / Li)
+                        st.write(f"{Li=}")
                         a = a1
                         it += 1
 
                     if it == it_max:
-                        st.warning("Non-convergence for projected gradient method")
+                        st.warning(
+                            "Non-convergence for projected gradient method")
 
-                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
-                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
+                    # reconstruction with least-square problem to cancel bias
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a, x)
+                    # argmin, approx, and nb of iterations
+                    return a_ls, approx_ls.flatten(), it, it_ls
 
             if st.session_state["nn_lasso_method"] == "Projected gradient":
 
@@ -984,7 +1047,8 @@ with tab_discrete_dict:
                     it = 0
 
                     while not stop_criterions(a, x, lambda_) and it < it_max:
-                        a1 = np.maximum(0, a - 1 / L * (np.dot(MtM, a) - Mx + Lambda))
+                        a1 = np.maximum(
+                            0, a - 1 / L * (np.dot(MtM, a) - Mx + Lambda))
                         # st.write(a1)
                         err = np.linalg.norm(a1 - a)
                         a = a1.copy()
@@ -992,11 +1056,13 @@ with tab_discrete_dict:
 
                     if it == it_max:
                         fegh = 3
-                        st.warning("Non-convergence for projected gradient method")
+                        st.warning(
+                            "Non-convergence for projected gradient method")
 
-                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
-                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
-
+                    # reconstruction with least-square problem to cancel bias
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a, x)
+                    # argmin, approx, and nb of iterations
+                    return a_ls, approx_ls.flatten(), it, it_ls
 
             if (
                 st.session_state["nn_lasso_method"]
@@ -1013,20 +1079,24 @@ with tab_discrete_dict:
 
                     def prox_l1(z, t):
                         return np.sign(z) * np.maximum(
-                            np.abs(z) - np.full(z.shape, t), np.full(z.shape, 0)
+                            np.abs(z) - np.full(z.shape,
+                                                t), np.full(z.shape, 0)
                         )
 
                     while not stop_criterions(a, x, lambda_) and it < it_max:
-                        a1 = prox_l1(a - (np.dot(MtM, a) - Mx) / L, lambda_ / L)
+                        a1 = prox_l1(
+                            a - (np.dot(MtM, a) - Mx) / L, lambda_ / L)
                         a = a1
                         it += 1
 
                     if it == it_max:
-                        st.warning("Non-convergence for projected gradient method")
+                        st.warning(
+                            "Non-convergence for projected gradient method")
 
-                    a_ls, approx_ls, it_ls = reconstruction_LS(a,x)# reconstruction with least-square problem to cancel bias
-                    return a_ls, approx_ls.flatten(), it, it_ls    # argmin, approx, and nb of iterations
-
+                    # reconstruction with least-square problem to cancel bias
+                    a_ls, approx_ls, it_ls = reconstruction_LS(a, x)
+                    # argmin, approx, and nb of iterations
+                    return a_ls, approx_ls.flatten(), it, it_ls
 
             # endregion
 
@@ -1038,20 +1108,18 @@ with tab_discrete_dict:
             start_time = time.time()
 
             compute_advancement = st.empty()
-            k = 1
+            nb_done = 0
             nb_curves = len(st.session_state["granulometrics"])
-            for index, row in st.session_state["granulometrics"].iterrows():
+            for index, x_values in st.session_state["granulometrics"].iterrows():
                 with compute_advancement.container():
-                    st.write(
-                        f"approximation ({k} over {nb_curves}) -> sample : {index} "
-                    )
+                    st.write(f"approximation ({nb_done+1} over {nb_curves}) -> label : {index}")
                 # compute decomposition for our observation x_i
                 a_i, approx_i, it_i, it_ls_i = decomposition_algo(
-                    row.to_numpy(), st.session_state["lambda_nn_lasso"]
+                    x_values.to_numpy(), st.session_state["lambda_nn_lasso"]
                 )
                 nb_it_total += it_i
                 nb_it_total_ls += it_ls_i
-                st.session_state["X-X_hat-X_ref"].loc[f"dd-{index}"] = approx_i
+                st.session_state["X-X_hat-X_ref"].loc[f"[DD]-{index}"] = approx_i
 
                 # saving coefficient that are non-zero
                 prop_dict_i = {}
@@ -1069,16 +1137,31 @@ with tab_discrete_dict:
                         )
                 for curve in prop_dict_i:
                     prop_dict_i[curve] = prop_dict_i[curve] * 100 / sum_aera_i
+                
+                # proportions
                 st.session_state["Prop_nn_lasso"][index] = prop_dict_i
-                k += 1
+
+                # errors
+                L1_rel = L1_relative(approx_i, index)
+                l2 = np.linalg.norm(approx_i - x_values,2)
+                new_row = {"L1 relative error": L1_rel,"l2 error":  l2}
+                st.session_state['dd_errors'].loc[index] = new_row
+                nb_done += 1
 
             end_time = time.time()
 
-            mean_it = (1.0 * nb_it_total) / len(st.session_state["granulometrics"])
-            mean_it_ls = (1.0 * nb_it_total_ls) / len(st.session_state["granulometrics"])
+            st.session_state['L1_mean_dd'] = np.mean(st.session_state['dd_errors']["L1 relative error"])
+            st.session_state['l2_mean_dd'] = np.mean(st.session_state['dd_errors']["l2 error"])
+
+
+            mean_it = (1.0 * nb_it_total) / \
+                len(st.session_state["granulometrics"])
+            mean_it_ls = (1.0 * nb_it_total_ls) / \
+                len(st.session_state["granulometrics"])
             with compute_advancement.container():
                 st.success("Decomposition computed with success")
-                st.write(f"mean of iterations (decomposition algorithm) : {mean_it}")
+                st.write(
+                    f"mean of iterations (decomposition algorithm) : {mean_it}")
                 st.write(f"mean of iterations (reconstruction algorithm) : {mean_it_ls}")
                 st.write(f"Execution time : {end_time-start_time:.2f} seconds")
 
@@ -1086,6 +1169,7 @@ with tab_discrete_dict:
             # endregion
 
         # region scaled reference curves
+        st.markdown("---")
         st.subheader("Scaled reference curves")
         st.markdown(
             """Reference curves are scaled so they all have an aera under the curve of one (with logarithmic abscisses). 
@@ -1169,30 +1253,32 @@ with tab_discrete_dict:
             showlegend=True,
             xaxis_title=" grain diametere (micrometers, log-scale)",
         )
-        fig.update_traces(hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+        fig.update_traces(
+            hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
 
         st.plotly_chart(fig)
         # endregion
 
 
-with tab_basic:
+with tab_NMF:
     col01, col02, col03 = st.columns([1, 3, 1])
 
     with col02:
-        st.header("Basic NMF")
+        st.markdown("<h1 style='text-align: center;'>Unsupervised (NMF)</h1>", unsafe_allow_html=True)
+        st.markdown("---")
         st.markdown(
-            """ Perform the following factorisation :  $$ X \\thickapprox AM + \\varepsilon $$ 
-                    by minimising the following expression as a function of $M$ and $A$
+            """ Perform the following factorisation :  $ X \\thickapprox AM + \\varepsilon~ $
+                    by minimising the following expression :
                     """
         )
-        st.latex(
-            r"""
-                \Vert X-AM\Vert^2_{\beta-loss}+2l_{1_\text{ratio}}\left(\alpha_M m\Vert M \Vert_1 +\alpha_A n\Vert A \Vert_1 \right)+(1-l_1{_\text{ratio}})\left(\alpha_M m\Vert M \Vert_F^2 +\alpha_A n\Vert A \Vert_F^2 \right)
-                """
-        )
+        penalization = r'''\begin{align*}
+    \arg \min_{A,M}~ & D_\beta(X\vert AM)\\ &+2\alpha_M l_{1_\text{ratio}} m\Vert M \Vert_1 \\& +2 \alpha_A l_{1_\text{ratio}} n\Vert A \Vert_1 \\ &+ \alpha_M (1-l_1{_\text{ratio}}) m\Vert M \Vert_F^2 \\ &+\alpha_A(1-l_1{_\text{ratio}}) n\Vert A \Vert_F^2 
+\end{align*}'''
+        st.latex(penalization)
 
-        st.markdown(
-            """ You can choose the values of the parameters : $\\beta-loss$, $l_1{_\\text{ratio}}$, $\\alpha_M$ and $\\alpha_A$
+        st.write("")
+        st.write(
+            """ You can choose the values of the parameters : $~\\beta,~l_1{_\\text{ratio}},~\\alpha_M,~\\alpha_A$
                     """
         )
 
@@ -1207,12 +1293,13 @@ with tab_basic:
                 min_value=2,
                 max_value=100,
                 step=1,
+                value=6,
                 format="%d",
             )
 
         with col2:
             loss_choice = st.selectbox(
-                "Beta_loss :",
+                "$\\beta$ (divergence)",
                 ("Frobenius (CD)", "Frobenius (MU)", "Kullback-Leibler (MU)"),
             )
             if loss_choice == "Kullback-Leibler (MU)":
@@ -1284,19 +1371,19 @@ with tab_basic:
                 columns=prop_col_label,
             )
 
-            # Approximation errors l2
-            err2_nmf = np.sum(
-                np.linalg.norm(X_nmf - st.session_state["granulometrics"], axis=1)
-            )
-            # L1-relativ norm of each approximations
-            st.session_state["Prop_nmf"]["L1_rel_norm (%)"] = X_nmf.apply(
-                lambda row: L1_relative(row.values, row.name), axis=1
-            )
-            # L1-relativ mean
-            errL1_nmf = np.mean(st.session_state["Prop_nmf"]["L1_rel_norm (%)"])
+            # saving nmf errors
+            l2_nmf = np.linalg.norm(X_nmf - st.session_state["granulometrics"], axis=1)
+            l1_rel_nmf = X_nmf.apply(lambda row: L1_relative(row.values, row.name), axis=1)
+            errors_series_nmf = pd.Series({})
+            st.session_state['nmf_errors'] = pd.DataFrame({"L1 relative error": l1_rel_nmf,"l2 error":  l2_nmf}, index = st.session_state['granulometrics'].index)
+
+            # mean of errors
+            st.session_state['L1_mean_nmf'] = np.mean(l1_rel_nmf)
+            st.session_state['l2_mean_nmf'] = np.mean(l2_nmf)
 
             # adding approximation to our result df
-            X_nmf.index = X_nmf.index.map(lambda x: f"^{x}")  # adding "^-" before
+            X_nmf.index = X_nmf.index.map(
+                lambda x: f"[NMF]-{x}")  # adding "[NMF]-" before
 
             # in this case we replace the old nmf approximation
             if st.session_state["nmf_flag"]:
@@ -1313,22 +1400,22 @@ with tab_basic:
             # Displaying approx errors
             col1, col2 = st.columns(2)
             with col1:
-                st.latex(r""" \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 """)
+                st.latex(r""" \frac{1}{n}\sum_{i=1}^{n} \Vert x_i-\hat{x}_i \Vert_2 """)
             with col2:
                 st.metric(
-                    "sum of quadratic errors",
-                    value=f"{err2_nmf:.4}",
+                    "mean of quadratic (l2) errors",
+                    value=f"{st.session_state['l2_mean_nmf']:.4}",
                     label_visibility="visible",
                 )
             col1, col2 = st.columns(2)
             with col1:
                 st.latex(
-                    r""" \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
+                    r""" \frac{1}{n}\sum_{i=1}^{n} \frac{\Vert x_i-\hat{x}_i \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
                 )
             with col2:
                 st.metric(
                     "mean of L1-relative errors (%)",
-                    value=f"{errL1_nmf:.3}%",
+                    value=f"{st.session_state['L1_mean_nmf']:.3}%",
                     label_visibility="visible",
                 )
 
@@ -1358,7 +1445,8 @@ with tab_basic:
                         col=col,
                     )
 
-                fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+                fig.update_xaxes(type="log", tickformat=".1e",
+                                 dtick=1, showgrid=True)
                 fig.update_yaxes(showgrid=True)
                 fig.update_layout(
                     height=1300,
@@ -1447,58 +1535,93 @@ with tab_rc:
                     we find and also to build differents approximations."""
         )
 
-        st.subheader("List of reference curves")
-        st.markdown(
-            f"""There are 8 differents reference curves that are mainly characterised by the location 
-                    of the peak on the x axis (diametre in $\\mu m$). You can see their plots below."""
+        st.subheader("Scaled reference curves")
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
+                y=st.session_state["scaled_ref_curves"]["ref_ArgilesFines"],
+                mode="lines",
+                name="Argiles Fines (<1 microns)",
+            )
         )
+        fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+        fig.update_layout(
+            height=500,
+            showlegend=True,
+            xaxis_title=" grain diametere (micrometers, log-scale)",
+        )
+        fig.update_traces(
+            hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
+                y=st.session_state["scaled_ref_curves"]["ref_ArgilesClassiques"],
+                mode="lines",
+                name="Argiles Grossières (1-7 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
+                y=st.session_state["scaled_ref_curves"]["ref_Alterites"],
+                mode="lines",
+                name="Alterites (7-20 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
+                y=st.session_state["scaled_ref_curves"]["ref_SablesFins"],
+                mode="lines",
+                name="Sables Fins (50-100 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
+                y=st.session_state["scaled_ref_curves"]["ref_SablesGrossiers"],
+                mode="lines",
+                name="Sables Grossiers (>100 microns)",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["ref_curves"]["ref_LimonsGrossiers"][0, :],
+                y=st.session_state["scaled_ref_curves"]["ref_LimonsGrossiers"],
+                mode="lines",
+                name="Limons Grossiers",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][0, :],
+                y=st.session_state["scaled_ref_curves"]["ref_LimonsGrossiersLoess"],
+                mode="lines",
+                name="Limons Grossiers-Loess",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state["ref_curves"]["ref_Loess"][0, :],
+                y=st.session_state["scaled_ref_curves"]["ref_Loess"],
+                mode="lines",
+                name="Loess",
+            )
+        )
+
+        st.plotly_chart(fig)
+
+        st.subheader("List of reference curves")
+        st.markdown(f"""There are 8 differents reference curves that are mainly characterised by the location
+                    of the peak on the x axis (diametre in $\\mu m$). You can see their plots below.""")
 
         with st.expander("List of reference curves :"):
 
             st.markdown(
                 "We plot first the reference curve of the Argiles Fines (fine clay) because its peak is much greater than the others"
             )
-            fig = go.Figure()
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
-                    y=st.session_state["ref_curves"]["ref_ArgilesFines"][1, :],
-                    mode="lines",
-                    name="Argiles Fines (<1 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
-                    y=st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :],
-                    mode="lines",
-                    name="Argiles Grossières (1-7 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-                    y=st.session_state["ref_curves"]["ref_Alterites"][1, :],
-                    mode="lines",
-                    name="Alterites (7-20 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
-                    y=st.session_state["ref_curves"]["ref_SablesFins"][1, :],
-                    mode="lines",
-                    name="Sables Fins (50-100 microns)",
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
-                    y=st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :],
-                    mode="lines",
-                    name="Sables Grossiers (>100 microns)",
-                )
-            )
 
             fig = go.Figure()
             fig.add_trace(
@@ -1509,13 +1632,15 @@ with tab_rc:
                     name="Argiles Fines (<1 microns)",
                 )
             )
-            fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+            fig.update_xaxes(type="log", tickformat=".1e",
+                             dtick=1, showgrid=True)
             fig.update_layout(
                 height=500,
                 showlegend=True,
                 xaxis_title=" grain diametere (micrometers, log-scale)",
             )
-            fig.update_traces(hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+            fig.update_traces(
+                hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
 
             st.plotly_chart(fig)
 
@@ -1559,7 +1684,8 @@ with tab_rc:
                 height=500,
                 xaxis_title=" grain diametere (micrometers, log-scale)",
             )
-            fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+            fig.update_traces(
+                hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
 
             st.plotly_chart(fig)
 
@@ -1596,13 +1722,15 @@ with tab_rc:
                 )
             )
 
-            fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+            fig.update_xaxes(type="log", tickformat=".1e",
+                             dtick=1, showgrid=True)
             fig.update_layout(
                 # Ajuster la hauteur de la figure en fonction du nombre de plots
                 height=500,
                 xaxis_title=" grain diametere (micrometers, log-scale)",
             )
-            fig.update_traces(hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+            fig.update_traces(
+                hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
 
             st.plotly_chart(fig)
 
@@ -1632,12 +1760,14 @@ with tab_rc:
             """We're now going to find the best combinaisons of our reference curves to approximate 
                     our observation X."""
         )
-        st.markdown("- $M_{ref}$ is the matrix that contains the 8 reference curves.")
+        st.markdown(
+            "- $M_{ref}$ is the matrix that contains the 8 reference curves.")
         st.markdown(
             "- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation."
         )
         st.markdown("So we have the following problem :")
-        st.latex(r""" A_{ref} = \arg \min_{A\geq 0} \Vert X-AM_{ref} \Vert_F^2 """)
+        st.latex(
+            r""" A_{ref} = \arg \min_{A\geq 0} \Vert X-AM_{ref} \Vert_F^2 """)
 
         if st.button("Perform estimations with reference curves"):
 
@@ -1729,16 +1859,19 @@ with tab_rc:
 
             # Approximation errors l2
             err2_approx_rc = np.sum(
-                np.linalg.norm(X_ref - st.session_state["granulometrics"], axis=1)
+                np.linalg.norm(
+                    X_ref - st.session_state["granulometrics"], axis=1)
             )
             # L1-relativ norm of each approximations
             st.session_state["Prop_rc"]["L1_rel_norm (%)"] = X_ref.apply(
                 lambda row: L1_relative(row.values, row.name), axis=1
             )
             # L1-relativ mean
-            errL1_approx_rc = np.mean(st.session_state["Prop_rc"]["L1_rel_norm (%)"])
+            errL1_approx_rc = np.mean(
+                st.session_state["Prop_rc"]["L1_rel_norm (%)"])
 
-            X_ref.index = X_ref.index.map(lambda x: f"r{x}")  # adding "r" before
+            X_ref.index = X_ref.index.map(
+                lambda x: f"r{x}")  # adding "r" before
 
             # in this case we replace the old reference curves approximation
             if st.session_state["rc_flag"]:
@@ -1776,11 +1909,8 @@ with tab_rc:
 
 
 with tab_result:
-    st.header("Display observations to compare them")
-    st.markdown(
-        "##### Please perform approximation before trying to plot curves of approximations"
-    )
-
+    st.markdown("<h1 style='text-align: center;'>Results</h1>", unsafe_allow_html=True)
+    st.markdown("---")
     labels_obs = st.session_state["granulometrics"].index
     labels_approx_nmf = st.session_state["X-X_hat-X_ref"].index[
         st.session_state["X-X_hat-X_ref"].index.str.startswith(("^"))
@@ -1790,106 +1920,189 @@ with tab_result:
     ]
 
     # Selection of curves to plot
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.multiselect(
-            "labels of the observations to diplay",
+    st.multiselect(
+            ":red[**Enter observation label :**]",
             options=labels_obs,
             key="selected_obs_labels",
         )
+    col2, col4 = st.columns(2)
     with col2:
         st.toggle(
-            "Display NMF-approximations",
+            "Plot NMF approximations",
             key="flag_nmf_approx",
-            value=False,
+            value=True,
             disabled=not st.session_state["nmf_flag"],
         )
-    with col3:
         st.toggle(
-            "Display approximations with reference curves",
-            key="flag_rc_approx",
-            value=False,
-            disabled=not st.session_state["rc_flag"],
+            "Display NMF component proportions and errors",
+            key = 'flag_nmf_prop',
+            value = True,
+            disabled=not st.session_state["nmf_flag"]
         )
+        
+    # with col3:
+    #     st.toggle(
+    #         "Display approximations with reference curves",
+    #         key="flag_rc_approx",
+    #         value=False,
+    #         disabled=not st.session_state["rc_flag"],
+    #     )
     with col4:
         st.toggle(
-            "Display approximations with discrete dictionnary (NN-LASSO)",
+            "Plot discrete dictionnary approximations",
             key="flag_nnlasso_approx",
-            value=False,
+            value=True,
             disabled=not st.session_state["dd_flag"],
         )
-
-    if st.session_state["nmf_flag"]:
-        st.subheader("Proportions of EM (NMF-approximations) for selected observation")
-        st.dataframe(
-            st.session_state["Prop_nmf"].loc[st.session_state["selected_obs_labels"]]
+        st.toggle(
+            "Display discrete dictionnary component proportions and errors",
+            key = 'flag_dd_prop',
+            value = True,
+            disabled=not st.session_state["dd_flag"]
         )
+    st.markdown("---")
+    st.info("Clic bellow to expand and view plot")
+    with st.expander("**Plot**", icon ="📈",expanded = False):
+        if st.session_state['selected_obs_labels']:
 
-    if st.session_state["rc_flag"]:
-        st.subheader(
-            "Proportions of reference curve (approximations) for selected observation"
-        )
-        st.dataframe(
-            st.session_state["Prop_rc"].loc[st.session_state["selected_obs_labels"]]
-        )
-
-    if st.session_state["dd_flag"]:
-        st.subheader(
-            "Proportions of curve in the discrete dicitonnary (approximations) for selected observation"
-        )
-        for label in st.session_state["selected_obs_labels"]:
-            st.table(st.session_state["Prop_nn_lasso"][label])
-
-    if st.button("Plots curves"):
-        curves_and_approx = st.session_state["X-X_hat-X_ref"]
-        fig = go.Figure()
-        for label in st.session_state["selected_obs_labels"]:
-            fig.add_trace(
-                go.Scatter(
-                    x=curves_and_approx.columns,
-                    y=curves_and_approx.loc[label],
-                    mode="lines",
-                    name=label,
+            curves_and_approx = st.session_state["X-X_hat-X_ref"]
+            fig = go.Figure()
+            for label in st.session_state["selected_obs_labels"]:
+                fig.add_trace(
+                    go.Scatter(
+                        x=curves_and_approx.columns,
+                        y=curves_and_approx.loc[label],
+                        mode="lines",
+                        name=label,
+                    )
                 )
+                if st.session_state["flag_nmf_approx"] and st.session_state['nmf_flag']:
+                    fig.add_trace(
+                        go.Scatter(
+                            x=curves_and_approx.columns,
+                            y=curves_and_approx.loc[f"[NMF]-{label}"],
+                            mode="lines",
+                            name=f"[NMF]-{label}",
+                        )
+                    )
+                # if st.session_state["flag_rc_approx"]:
+                #     fig.add_trace(
+                #         go.Scatter(
+                #             x=curves_and_approx.columns,
+                #             y=curves_and_approx.loc[f"r{label}"],
+                #             mode="lines",
+                #             name=f"r{label}",
+                #         )
+                #     )
+                if st.session_state["flag_nnlasso_approx"] and st.session_state['dd_flag']:
+                    fig.add_trace(
+                        go.Scatter(
+                            x=curves_and_approx.columns,
+                            y=curves_and_approx.loc[f"[DD]-{label}"],
+                            mode="lines",
+                            name=f"[DD]-{label}",
+                        )
+                    )
+
+            fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+            fig.update_layout(
+                height=800,
+                width=1000,
+                showlegend=True,
+                xaxis_title=" grain diametere (micrometers, log-scale)",
             )
-            if st.session_state["flag_nmf_approx"]:
-                fig.add_trace(
-                    go.Scatter(
-                        x=curves_and_approx.columns,
-                        y=curves_and_approx.loc[f"^{label}"],
-                        mode="lines",
-                        name=f"^{label}",
-                    )
-                )
-            if st.session_state["flag_rc_approx"]:
-                fig.add_trace(
-                    go.Scatter(
-                        x=curves_and_approx.columns,
-                        y=curves_and_approx.loc[f"r{label}"],
-                        mode="lines",
-                        name=f"r{label}",
-                    )
-                )
-            if st.session_state["flag_nnlasso_approx"]:
-                fig.add_trace(
-                    go.Scatter(
-                        x=curves_and_approx.columns,
-                        y=curves_and_approx.loc[f"dd-{label}"],
-                        mode="lines",
-                        name=f"dd-{label}",
-                    )
+            fig.update_traces(
+                hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+
+            st.plotly_chart(fig)
+        else:
+            st.warning("**Please select labels to plot")
+
+    
+    if st.session_state['selected_obs_labels']:
+        col_nmf, col_dd, _ = st.columns(3)
+        with col_nmf:
+            if st.session_state["flag_nmf_prop"] and st.session_state["nmf_flag"]:
+                st.markdown("<h3 style='text-align: center;'>[NMF]</h3>", unsafe_allow_html=True)
+                st.write(f"**Proportion of end-members**")
+                st.table(
+                    st.session_state["Prop_nmf"].loc[st.session_state["selected_obs_labels"]].transpose()
                 )
 
-        fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
-        fig.update_layout(
-            height=800,
-            width=1000,
-            showlegend=True,
-            xaxis_title=" grain diametere (micrometers, log-scale)",
-        )
-        fig.update_traces(hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+            # if st.session_state["rc_flag"]:
+            #     st.subheader(
+            #         "Proportions of reference curve (approximations) for selected observation"
+            #     )
+            #     st.dataframe(
+            #         st.session_state["Prop_rc"].loc[st.session_state["selected_obs_labels"]]
+            #     )
+        with col_dd:
+            if st.session_state["flag_dd_prop"] and st.session_state["dd_flag"]:
+                st.markdown("<h3 style='text-align: center;'>[Discrete dictionnary]</h3>", unsafe_allow_html=True)
+                st.markdown("---")
+                st.write("**Proportions of components**")
+                for label in st.session_state["selected_obs_labels"]:
+                    st.table(st.session_state["Prop_nn_lasso"][label])
+                
+                
+        
+        col_nmf, col_dd, _ = st.columns(3)
 
-        st.plotly_chart(fig)
+        with col_nmf:
+            if st.session_state["flag_nmf_prop"] and st.session_state["nmf_flag"]:
+                st.write("**Errors for selected observation**")
+                st.table(st.session_state['nmf_errors'].loc[st.session_state["selected_obs_labels"]].transpose())
+                st.write("**Average errors on all data**")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.latex(r""" \frac{1}{n}\sum_{i=1}^{n} \Vert x_i-\hat{x}_i \Vert_2 """)
+                with col2:
+                    st.metric(
+                        "mean of quadratic (l2) errors",
+                        value=f"{st.session_state['l2_mean_nmf']:.4}",
+                        label_visibility="visible",
+                    )
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.latex(
+                        r""" \frac{1}{n}\sum_{i=1}^{n} \frac{\Vert x_i-\hat{x}_i \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
+                    )
+                with col2:
+                    st.metric(
+                        "mean of L1-relative errors (%)",
+                        value=f"{st.session_state['L1_mean_nmf']:.3}%",
+                        label_visibility="visible",
+                    )
+
+        with col_dd:
+            if st.session_state["flag_dd_prop"] and st.session_state["dd_flag"]:
+                st.write("**Errors**")
+                for label in st.session_state["selected_obs_labels"]:
+                    st.table(st.session_state['dd_errors'].loc[label])
+                
+                st.write("**Average errors on all data**")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.latex(r""" \frac{1}{n}\sum_{i=1}^{n} \Vert x_i-\hat{x}_i \Vert_2 """)
+                with col2:
+                    st.metric(
+                        "mean of quadratic (l2) errors",
+                        value=f"{st.session_state['l2_mean_dd']:.4}",
+                        label_visibility="visible",
+                    )
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.latex(
+                        r""" \frac{1}{n}\sum_{i=1}^{n} \frac{\Vert x_i-\hat{x}_i \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
+                    )
+                with col2:
+                    st.metric(
+                        "mean of L1-relative errors (%)",
+                        value=f"{st.session_state['L1_mean_dd']:.3}%",
+                        label_visibility="visible",
+                    )
+                
+
 
 
 # region tab_robust
