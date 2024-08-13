@@ -20,7 +20,7 @@ sys.path.append("..")
 st.set_page_config(page_title="NMF test", layout="wide")
 
 
-st.title("Methods for gromulometric analysis")
+st.title("Component identification based on granulometric data")
 
 # removing old export file
 if  'clean_exports_flag' not in st.session_state:
@@ -1293,7 +1293,7 @@ with tab_NMF:
                 min_value=2,
                 max_value=100,
                 step=1,
-                value=6,
+                value=6,        # index of the default value to take in the list [min_value:max_value]
                 format="%d",
             )
 
