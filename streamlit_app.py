@@ -20,7 +20,7 @@ sys.path.append("..")
 st.set_page_config(page_title="NMF test", layout="wide")
 
 
-st.title("Component identification based on granulometric data")
+st.title("Component identification on granulometric data")
 
 # removing old export file
 if  'clean_exports_flag' not in st.session_state:
