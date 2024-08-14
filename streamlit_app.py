@@ -117,7 +117,7 @@ if "ref_curves" not in st.session_state:
     st.session_state["ref_curves"]["ref_LimonsGrossiers"] = np.genfromtxt(
         "ref_curves/ref_LimonsGrossiers.csv", delimiter=","
     )
-    st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"] = np.genfromtxt(
+    st.session_state["ref_curves"]["ref_Loess_without_residules"] = np.genfromtxt(
         "ref_curves/ref_LimonsGrossiersLoess.csv", delimiter=","
     )
     st.session_state["scaled_ref_curves"] = (
@@ -126,28 +126,28 @@ if "ref_curves" not in st.session_state:
     )
     # st.session_state['scaled_ref_curves']['abscisses'] = st.session_state["ref_curves"]["ref_ArgilesFines"][0,:] # --> abscisses not necessary
     st.session_state["scaled_ref_curves"]["ref_ArgilesFines"] = (
-        st.session_state["ref_curves"]["ref_ArgilesFines"][1, :] * 0.00101501
+        st.session_state["ref_curves"]["ref_ArgilesFines"][1, :] * 0.004
     )
     st.session_state["scaled_ref_curves"]["ref_ArgilesClassiques"] = (
-        st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :] * 0.0353269
+        st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :] * 0.03
     )
     st.session_state["scaled_ref_curves"]["ref_Alterites"] = (
         st.session_state["ref_curves"]["ref_Alterites"][1, :] * 0.107063
     )
     st.session_state["scaled_ref_curves"]["ref_SablesFins"] = (
-        st.session_state["ref_curves"]["ref_SablesFins"][1, :] * 0.135512
+        st.session_state["ref_curves"]["ref_SablesFins"][1, :] * 0.1
     )
     st.session_state["scaled_ref_curves"]["ref_SablesGrossiers"] = (
-        st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :] * 0.0903764
+        st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :] * 0.05
     )
     st.session_state["scaled_ref_curves"]["ref_Loess"] = (
-        st.session_state["ref_curves"]["ref_Loess"][1, :] * 0.107131
+        st.session_state["ref_curves"]["ref_Loess"][1, :] * 0
     )
     st.session_state["scaled_ref_curves"]["ref_LimonsGrossiers"] = (
-        st.session_state["ref_curves"]["ref_LimonsGrossiers"][1, :] * 0.141878
+        st.session_state["ref_curves"]["ref_LimonsGrossiers"][1, :] * 0.11
     )
-    st.session_state["scaled_ref_curves"]["ref_LimonsGrossiersLoess"] = (
-        st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][1, :] * 0.0747438
+    st.session_state["scaled_ref_curves"]["ref_Loess_without_residules"] = (
+        st.session_state["ref_curves"]["ref_Loess_without_residules"][1, :] * 0.06
     )
 
 # region Other variables / functions
@@ -518,15 +518,15 @@ with tab_discrete_dict:
             st.number_input(
                 "Coefficient of penalization (lambda)",
                 key="lambda_nn_lasso",
-                value=10.0,
+                value=2,
                 min_value=0.0,
-                step=1.0,
+                step=0.5,
             )
         with col3:
-            st.number_input("Precision for dual gap", key="p_dg", value=5.0)
+            st.number_input("Precision for dual gap", key="p_dg", value=0.5)
         with col4:
             st.number_input(
-                "Precision for complementary slackness", key="p_cs", value=5.0
+                "Precision for complementary slackness", key="p_cs", value=0.5
             )
 
         if st.button("Run decomposition"):
@@ -597,7 +597,7 @@ with tab_discrete_dict:
             M = np.transpose(
                 st.session_state["discrete_dictionnary"].to_numpy())
             # hyper-parameters
-            it_max = 1e4
+            it_max = 2e4
             MtM = np.dot(M.T, M)  # saving result to optimize
             eta = 2
             # Lipschitz constant of our objective function
@@ -1168,6 +1168,7 @@ with tab_discrete_dict:
             st.session_state["dd_flag"] = True
             # endregion
 
+
         # region scaled reference curves
         st.markdown("---")
         st.subheader("Scaled reference curves")
@@ -1225,7 +1226,7 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["ref_LimonsGrossiersLoess"],
+                y=st.session_state["scaled_ref_curves"]["ref_Loess_without_residules"],
                 mode="lines",
                 name="Loess sans limons (20-50 microns)",
             )
@@ -1596,8 +1597,8 @@ with tab_rc:
         )
         fig.add_trace(
             go.Scatter(
-                x=st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][0, :],
-                y=st.session_state["scaled_ref_curves"]["ref_LimonsGrossiersLoess"],
+                x=st.session_state["ref_curves"]["ref_Loess_without_residules"][0, :],
+                y=st.session_state["scaled_ref_curves"]["ref_Loess_without_residules"],
                 mode="lines",
                 name="Limons Grossiers-Loess",
             )
@@ -1707,8 +1708,8 @@ with tab_rc:
             )
             fig.add_trace(
                 go.Scatter(
-                    x=st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][0, :],
-                    y=st.session_state["ref_curves"]["ref_LimonsGrossiersLoess"][1, :],
+                    x=st.session_state["ref_curves"]["ref_Loess_without_residules"][0, :],
+                    y=st.session_state["ref_curves"]["ref_Loess_without_residules"][1, :],
                     mode="lines",
                     name="Limons Grossiers-Loess",
                 )
