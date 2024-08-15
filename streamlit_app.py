@@ -17,7 +17,7 @@ import sys
 
 sys.path.append("..")
 
-st.set_page_config(page_title="NMF test", layout="wide")
+st.set_page_config(page_title="jpousset : granulometric analysis", layout="wide")
 
 
 st.title("Component identification on granulometric data")
@@ -2056,15 +2056,6 @@ with tab_result:
                 st.write("**Average errors on all data**")
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.latex(r""" \frac{1}{n}\sum_{i=1}^{n} \Vert x_i-\hat{x}_i \Vert_2 """)
-                with col2:
-                    st.metric(
-                        "mean of quadratic (l2) errors",
-                        value=f"{st.session_state['l2_mean_nmf']:.4}",
-                        label_visibility="visible",
-                    )
-                col1, col2 = st.columns(2)
-                with col1:
                     st.latex(
                         r""" \frac{1}{n}\sum_{i=1}^{n} \frac{\Vert x_i-\hat{x}_i \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
                     )
@@ -2074,6 +2065,16 @@ with tab_result:
                         value=f"{st.session_state['L1_mean_nmf']:.3}%",
                         label_visibility="visible",
                     )
+                with col1:
+                    st.latex(r""" \frac{1}{n}\sum_{i=1}^{n} \Vert x_i-\hat{x}_i \Vert_2 """)
+                with col2:
+                    st.metric(
+                        "mean of quadratic (l2) errors",
+                        value=f"{st.session_state['l2_mean_nmf']:.4}",
+                        label_visibility="visible",
+                    )
+                col1, col2 = st.columns(2)
+                
 
         with col_dd:
             if st.session_state["flag_dd_prop"] and st.session_state["dd_flag"]:
@@ -2082,15 +2083,6 @@ with tab_result:
                     st.table(st.session_state['dd_errors'].loc[label])
                 
                 st.write("**Average errors on all data**")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.latex(r""" \frac{1}{n}\sum_{i=1}^{n} \Vert x_i-\hat{x}_i \Vert_2 """)
-                with col2:
-                    st.metric(
-                        "mean of quadratic (l2) errors",
-                        value=f"{st.session_state['l2_mean_dd']:.4}",
-                        label_visibility="visible",
-                    )
                 col1, col2 = st.columns(2)
                 with col1:
                     st.latex(
@@ -2102,6 +2094,16 @@ with tab_result:
                         value=f"{st.session_state['L1_mean_dd']:.3}%",
                         label_visibility="visible",
                     )
+                with col1:
+                    st.latex(r""" \frac{1}{n}\sum_{i=1}^{n} \Vert x_i-\hat{x}_i \Vert_2 """)
+                with col2:
+                    st.metric(
+                        "mean of quadratic (l2) errors",
+                        value=f"{st.session_state['l2_mean_dd']:.4}",
+                        label_visibility="visible",
+                    )
+                col1, col2 = st.columns(2)
+                
                 
 
 
