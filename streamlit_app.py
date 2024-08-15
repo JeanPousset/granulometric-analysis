@@ -518,7 +518,7 @@ with tab_discrete_dict:
             st.number_input(
                 "Coefficient of penalization (lambda)",
                 key="lambda_nn_lasso",
-                value=2,
+                value=2.0,
                 min_value=0.0,
                 step=0.5,
             )
