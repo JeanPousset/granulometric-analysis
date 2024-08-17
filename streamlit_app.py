@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import cvxpy as cp
 from functools import partial
 import subprocess
+import re
 
 
 # from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm
@@ -125,29 +126,30 @@ if "ref_curves" not in st.session_state:
         # for ref curves that will be on the same scale as observations (for NN-LASSO)
     )
     # st.session_state['scaled_ref_curves']['abscisses'] = st.session_state["ref_curves"]["ref_ArgilesFines"][0,:] # --> abscisses not necessary
-    st.session_state["scaled_ref_curves"]["ref_ArgilesFines"] = (
+    st.session_state["scaled_ref_curves"]["Argiles Fines"] = (
         st.session_state["ref_curves"]["ref_ArgilesFines"][1, :] * 0.004
     )
-    st.session_state["scaled_ref_curves"]["ref_ArgilesClassiques"] = (
+    st.session_state["scaled_ref_curves"]["Argiles Classiques"] = (
         st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :] * 0.03
     )
-    st.session_state["scaled_ref_curves"]["ref_Alterites"] = (
+    st.session_state["scaled_ref_curves"]["Alterites"] = (
         st.session_state["ref_curves"]["ref_Alterites"][1, :] * 0.107063
     )
-    st.session_state["scaled_ref_curves"]["ref_SablesFins"] = (
-        st.session_state["ref_curves"]["ref_SablesFins"][1, :] * 0.1
-    )
-    st.session_state["scaled_ref_curves"]["ref_SablesGrossiers"] = (
-        st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :] * 0.05
-    )
-    st.session_state["scaled_ref_curves"]["ref_Loess"] = (
-        st.session_state["ref_curves"]["ref_Loess"][1, :] * 0
-    )
-    st.session_state["scaled_ref_curves"]["ref_LimonsGrossiers"] = (
+    # We prefer don't use raw Loess component curve
+    # st.session_state["scaled_ref_curves"]["ref_Loess"] = (
+    #     st.session_state["ref_curves"]["ref_Loess"][1, :] * 0
+    # )
+    st.session_state["scaled_ref_curves"]["Limons Grossiers"] = (
         st.session_state["ref_curves"]["ref_LimonsGrossiers"][1, :] * 0.11
     )
-    st.session_state["scaled_ref_curves"]["ref_Loess_without_residules"] = (
+    st.session_state["scaled_ref_curves"]["Loess (without residues)"] = (
         st.session_state["ref_curves"]["ref_Loess_without_residules"][1, :] * 0.06
+    )
+    st.session_state["scaled_ref_curves"]["Sables Fins"] = (
+        st.session_state["ref_curves"]["ref_SablesFins"][1, :] * 0.1
+    )
+    st.session_state["scaled_ref_curves"]["Sables Grossiers"] = (
+        st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :] * 0.05
     )
 
 # region Other variables / functions
@@ -1138,8 +1140,32 @@ with tab_discrete_dict:
                 for curve in prop_dict_i:
                     prop_dict_i[curve] = prop_dict_i[curve] * 100 / sum_aera_i
                 
+                # merging proportions of the same component
+                merged_prop_dict_i = {}
+                for comp_i_name in st.session_state['scaled_ref_curves'].keys():
+                    curve_of_comp_i = {}
+                    comp_flag = False
+                    for curve_name in prop_dict_i.keys():
+                        if curve_name.startswith(comp_i_name):
+                            # set componentt existence flag 
+                            comp_flag = True
+                            # identify peak location of the duplicata with regex
+                            peak_loc_pattern = r"\((\d*\.?\d+)\)"
+                            peak = re.findall(peak_loc_pattern, curve_name)
+                            # saving peak and prop
+                            curve_of_comp_i[f"{peak[0]}"] = prop_dict_i[curve_name]
+                    
+                    if comp_flag:
+                        # avergage of peak location weighted with area
+                        merged_peak = np.average([float(peak) for peak in curve_of_comp_i.keys()], weights = list(curve_of_comp_i.values()))
+                        sum_aera = np.sum(list(curve_of_comp_i.values()))
+
+                        # saving result 
+                        merged_prop_dict_i[f"{comp_i_name} ({round(merged_peak,2)})"] = sum_aera
+
                 # proportions
-                st.session_state["Prop_nn_lasso"][index] = prop_dict_i
+                st.session_state["Prop_nn_lasso"][index] = merged_prop_dict_i
+                # st.session_state["Prop_nn_lasso"][index] = prop_dict_i
 
                 # errors
                 L1_rel = L1_relative(approx_i, index)
@@ -1186,7 +1212,7 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["ref_ArgilesFines"],
+                y=st.session_state["scaled_ref_curves"]["Argiles Fines"],
                 mode="lines",
                 name="Argiles fines (<1 microns)",
             )
@@ -1194,7 +1220,7 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["ref_ArgilesClassiques"],
+                y=st.session_state["scaled_ref_curves"]["Argiles Classiques"],
                 mode="lines",
                 name="Argiles grossières (1-7 microns)",
             )
@@ -1202,7 +1228,7 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["ref_Alterites"],
+                y=st.session_state["scaled_ref_curves"]["Alterites"],
                 mode="lines",
                 name="Limons d'altération (7-20 microns)",
             )
@@ -1210,23 +1236,23 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["ref_LimonsGrossiers"],
+                y=st.session_state["scaled_ref_curves"]["Limons Grossiers"],
                 mode="lines",
                 name="Limons grossiers (20-50 microns)",
             )
         )
+        # fig.add_trace(
+        #     go.Scatter(
+        #         x=abscisses,
+        #         y=st.session_state["scaled_ref_curves"]["ref_Loess"],
+        #         mode="lines",
+        #         name="Loess (20-50 microns)",
+        #     )
+        # )
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["ref_Loess"],
-                mode="lines",
-                name="Loess (20-50 microns)",
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["ref_Loess_without_residules"],
+                y=st.session_state["scaled_ref_curves"]["Loess (without residues)"],
                 mode="lines",
                 name="Loess sans limons (20-50 microns)",
             )
@@ -1234,7 +1260,7 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["ref_SablesFins"],
+                y=st.session_state["scaled_ref_curves"]["Sables Fins"],
                 mode="lines",
                 name="Sables fins (50-100 microns)",
             )
@@ -1242,7 +1268,7 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["ref_SablesGrossiers"],
+                y=st.session_state["scaled_ref_curves"]["Sables Grossiers"],
                 mode="lines",
                 name="Sables grossires (>100 microns)",
             )
@@ -1268,18 +1294,18 @@ with tab_NMF:
         st.markdown("<h1 style='text-align: center;'>Unsupervised (NMF)</h1>", unsafe_allow_html=True)
         st.markdown("---")
         st.markdown(
-            """ Perform the following factorisation :  $ X \\thickapprox AM + \\varepsilon~ $
+            """ Perform the following factorisation :  $ Y \\thickapprox XM ~ $
                     by minimising the following expression :
                     """
         )
         penalization = r'''\begin{align*}
-    \arg \min_{A,M}~ & D_\beta(X\vert AM)\\ &+2\alpha_M l_{1_\text{ratio}} m\Vert M \Vert_1 \\& +2 \alpha_A l_{1_\text{ratio}} n\Vert A \Vert_1 \\ &+ \alpha_M (1-l_1{_\text{ratio}}) m\Vert M \Vert_F^2 \\ &+\alpha_A(1-l_1{_\text{ratio}}) n\Vert A \Vert_F^2 
+    \arg \min_{X,M}~ & D_\beta(Y\vert XM)\\ &+2\alpha_M l_{1_\text{ratio}} m\Vert M \Vert_1 \\& +2 \alpha_X l_{1_\text{ratio}} n\Vert X \Vert_1 \\ &+ \alpha_M (1-l_1{_\text{ratio}}) m\Vert M \Vert_F^2 \\ &+\alpha_X(1-l_1{_\text{ratio}}) n\Vert X \Vert_F^2 
 \end{align*}'''
         st.latex(penalization)
 
         st.write("")
         st.write(
-            """ You can choose the values of the parameters : $~\\beta,~l_1{_\\text{ratio}},~\\alpha_M,~\\alpha_A$
+            """ You can choose the values of the parameters : $~\\beta,~l_1{_\\text{ratio}},~\\alpha_M,~\\alpha_X$
                     """
         )
 
@@ -1320,7 +1346,7 @@ with tab_NMF:
         with col4:
             st.number_input("penalization coef M", format="%f", key="a_W")
         with col5:
-            st.number_input("penalization coef A", format="%f", key="a_A")
+            st.number_input("penalization coef X", format="%f", key="a_A")
 
         st.header("Algorithm")
 
@@ -1541,7 +1567,7 @@ with tab_rc:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
-                y=st.session_state["scaled_ref_curves"]["ref_ArgilesFines"],
+                y=st.session_state["scaled_ref_curves"]["Argiles Fines"],
                 mode="lines",
                 name="Argiles Fines (<1 microns)",
             )
@@ -1558,7 +1584,7 @@ with tab_rc:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
-                y=st.session_state["scaled_ref_curves"]["ref_ArgilesClassiques"],
+                y=st.session_state["scaled_ref_curves"]["Argiles Classiques"],
                 mode="lines",
                 name="Argiles Grossières (1-7 microns)",
             )
@@ -1566,7 +1592,7 @@ with tab_rc:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-                y=st.session_state["scaled_ref_curves"]["ref_Alterites"],
+                y=st.session_state["scaled_ref_curves"]["Alterites"],
                 mode="lines",
                 name="Alterites (7-20 microns)",
             )
@@ -1574,7 +1600,7 @@ with tab_rc:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
-                y=st.session_state["scaled_ref_curves"]["ref_SablesFins"],
+                y=st.session_state["scaled_ref_curves"]["Sables Fins"],
                 mode="lines",
                 name="Sables Fins (50-100 microns)",
             )
@@ -1582,7 +1608,7 @@ with tab_rc:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
-                y=st.session_state["scaled_ref_curves"]["ref_SablesGrossiers"],
+                y=st.session_state["scaled_ref_curves"]["Sables Grossiers"],
                 mode="lines",
                 name="Sables Grossiers (>100 microns)",
             )
@@ -1590,7 +1616,7 @@ with tab_rc:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_LimonsGrossiers"][0, :],
-                y=st.session_state["scaled_ref_curves"]["ref_LimonsGrossiers"],
+                y=st.session_state["scaled_ref_curves"]["Limons Grossiers"],
                 mode="lines",
                 name="Limons Grossiers",
             )
@@ -1598,19 +1624,19 @@ with tab_rc:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_Loess_without_residules"][0, :],
-                y=st.session_state["scaled_ref_curves"]["ref_Loess_without_residules"],
+                y=st.session_state["scaled_ref_curves"]["Loess (without residues)"],
                 mode="lines",
                 name="Limons Grossiers-Loess",
             )
         )
-        fig.add_trace(
-            go.Scatter(
-                x=st.session_state["ref_curves"]["ref_Loess"][0, :],
-                y=st.session_state["scaled_ref_curves"]["ref_Loess"],
-                mode="lines",
-                name="Loess",
-            )
-        )
+        # fig.add_trace(
+        #     go.Scatter(
+        #         x=st.session_state["ref_curves"]["ref_Loess"][0, :],
+        #         y=st.session_state["scaled_ref_curves"]["ref_Loess"],
+        #         mode="lines",
+        #         name="Loess",
+        #     )
+        # )
 
         st.plotly_chart(fig)
 
@@ -2025,10 +2051,22 @@ with tab_result:
         with col_nmf:
             if st.session_state["flag_nmf_prop"] and st.session_state["nmf_flag"]:
                 st.markdown("<h3 style='text-align: center;'>[NMF]</h3>", unsafe_allow_html=True)
+                st.markdown("---")
                 st.write(f"**Proportion of end-members**")
-                st.table(
-                    st.session_state["Prop_nmf"].loc[st.session_state["selected_obs_labels"]].transpose()
-                )
+                
+                #st.session_state["Prop_nmf"].loc[st.session_state["selected_obs_labels"]].transpose()
+                for label in st.session_state["selected_obs_labels"]:
+                    prop = st.session_state['Prop_nmf'].loc[label]
+                    fig = go.Figure(data=[go.Bar(
+                        x=list(prop.index),
+                        y=list(prop.values),
+                        text = np.round(list(prop.values),2),
+                        marker=dict(
+                            color=np.round(list(prop.values),2),  
+                            colorscale='Inferno'
+                        )
+                    )])
+                    st.plotly_chart(fig)
 
             # if st.session_state["rc_flag"]:
             #     st.subheader(
@@ -2043,8 +2081,17 @@ with tab_result:
                 st.markdown("---")
                 st.write("**Proportions of components**")
                 for label in st.session_state["selected_obs_labels"]:
-                    st.table(st.session_state["Prop_nn_lasso"][label])
-                
+                    prop = st.session_state['Prop_nn_lasso'][label]
+                    fig = go.Figure(data=[go.Bar(
+                        x=list(prop.keys()),
+                        y=list(prop.values()),
+                        text = np.round(list(prop.values()),2),
+                        marker=dict(
+                            color=np.round(list(prop.values()),2),  
+                            colorscale='Inferno'
+                        )
+                    )])
+                    st.plotly_chart(fig)
                 
         
         col_nmf, col_dd, _ = st.columns(3)
