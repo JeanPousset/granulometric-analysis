@@ -502,10 +502,9 @@ with tab_discrete_dict:
         st.selectbox(
             label="Choose the resolution method",
             options=[
+                "NN Frank-Wolfe",
                 "Frank-Wolfe",
                 "NN gready algo",
-                "NN FW (proj with max 0)",
-                "NN FW step 1 modification",
                 "FISTA with backtracking",
                 "Proximal Gradient with backtracking",
                 "Proximal Gradient with constant step-size",
@@ -801,19 +800,17 @@ with tab_discrete_dict:
                     # argmin, approx, and nb of iterations
                     return a_ls, approx_ls.flatten(), it, it_ls
 
-            if st.session_state['nn_lasso_method'] == "NN FW step 1 modification":
+            if st.session_state['nn_lasso_method'] == "NN Frank-Wolfe":
                 def decomposition_algo(x, lambda_):
                     a = np.zeros(M.shape[1])
                     w = np.linalg.norm(x, 2) ** 2 / (2 * lambda_)
                     w_bar = w
                     it = 0
-                    M_prime = np.hstack((M, -M))
+
                     f = partial(f_global, x_=x, lambda_=lambda_)
 
-                    # avoid having to compute it every time
+                    # avoid to compute it every time
                     Mx = np.dot(M.T, x).reshape(a.shape)
-                    # M_prime_x = np.dot(M_prime.T, x)
-                    # MtM_prime = np.dot(M_prime.T,M_prime)
 
                     # case where || M^t x ||_infty <= lambda
                     if np.max(np.abs(Mx)) <= lambda_:
@@ -828,18 +825,16 @@ with tab_discrete_dict:
 
                         # STEP 1:
                         if np.max(np.abs(Mx - np.dot(MtM, a))) <= lambda_:
-                            st.write("Zero case")
                             a_pre = np.zeros(a.shape)
                             w_pre = 0
                         else:
-                            st.write("Non-zero case")
                             canonic_vec = np.zeros(a.shape)
                             canonic_vec[i_star] = 1
                             a_pre = canonic_vec * w_bar
                             w_pre = w_bar
 
                         # STEP2:
-                        v = m_i_star * np.sign(np.dot(m_i_star, r)) * w_pre - np.dot(
+                        v = m_i_star * w_pre - np.dot(
                             M, a
                         )
                         gamma_pre = (np.dot(v, r) + lambda_ * (w - w_pre)) / (
