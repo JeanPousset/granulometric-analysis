@@ -77,12 +77,6 @@ if "rc_flag" not in st.session_state:
     st.session_state["rc_flag"] = False
 if "nmf_flag" not in st.session_state:
     st.session_state["nmf_flag"] = False
-if "a_W" not in st.session_state:
-    st.session_state["a_W"] = 0.0
-if "a_H" not in st.session_state:
-    st.session_state["a_H"] = 0.0
-if "ratio_l1" not in st.session_state:
-    st.session_state["ratio_l1"] = 0.0
 if "lambda_robust" not in st.session_state:
     st.session_state["lambda_robust"] = 1.0
 if "beta_r" not in st.session_state:
@@ -1320,7 +1314,7 @@ with tab_NMF:
                 min_value=2,
                 max_value=100,
                 step=1,
-                value=6,        # index of the default value to take in the list [min_value:max_value]
+                value=7,        # index of the default value to take in the list [min_value:max_value]
                 format="%d",
             )
 
@@ -1341,12 +1335,12 @@ with tab_NMF:
 
         with col3:
             st.number_input(
-                "l1-l2 ratio", key="ratio_l1", min_value=0.0, max_value=1.0, format="%f"
+                "l1-l2 ratio", key="ratio_l1",value = 1.0, min_value=0.0, max_value=1.0, format="%f"
             )
         with col4:
-            st.number_input("penalization coef M", format="%f", key="a_W")
+            st.number_input("penalization coef M", format="%f", key="a_W", value = 0.0, min_value = 0.0)
         with col5:
-            st.number_input("penalization coef X", format="%f", key="a_A")
+            st.number_input("penalization coef X", format="%f", key="a_A", value = 0.0, min_value = 0.0)
 
         st.header("Algorithm")
 
@@ -1359,7 +1353,7 @@ with tab_NMF:
                 init="random",
                 l1_ratio=st.session_state["ratio_l1"],
                 alpha_W=st.session_state["a_W"],
-                alpha_H=st.session_state["a_H"],
+                alpha_H=st.session_state["a_A"],
                 random_state=0,
                 tol=1e-6,
                 max_iter=15000,
