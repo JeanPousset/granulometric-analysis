@@ -482,6 +482,9 @@ with tab_continous_dict:
 with tab_discrete_dict:
     col01, col02, col03 = st.columns([1, 3, 1])
     with col02:
+
+        # region input param
+
         st.markdown("<h1 style='text-align: center;'>Discrete dictionnary</h1>", unsafe_allow_html=True)
         st.markdown("---")        
         st.markdown(
@@ -529,6 +532,8 @@ with tab_discrete_dict:
             st.number_input(
                 "Precision for complementary slackness", key="p_cs", value=0.5
             )
+
+        # endregion
 
         if st.button("Run decomposition"):
 
@@ -598,7 +603,7 @@ with tab_discrete_dict:
             M = np.transpose(
                 st.session_state["discrete_dictionnary"].to_numpy())
             # hyper-parameters
-            it_max = 2e4
+            it_max = 2e3
             MtM = np.dot(M.T, M)  # saving result to optimize
             eta = 2
             # Lipschitz constant of our objective function
@@ -855,7 +860,7 @@ with tab_discrete_dict:
                         it += 1
 
                     if it == it_max:
-                        st.warning("Non-convergence for Frank-Wolfe method")
+                        st.warning("Non-convergence (Frank-Wolfe method) for one observation")
 
                     # reconstruction with least-square problem to cancel bias
                     a_ls, approx_ls, it_ls = reconstruction_LS(a, x)
@@ -1571,7 +1576,7 @@ with tab_rc:
         fig.update_layout(
             height=500,
             showlegend=True,
-            xaxis_title=" grain diametere (micrometers, log-scale)",
+            xaxis_title=" grain diameter (micrometers, log-scale)",
         )
         fig.update_traces(
             hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
@@ -1621,7 +1626,7 @@ with tab_rc:
                 x=st.session_state["ref_curves"]["ref_Loess_without_residules"][0, :],
                 y=st.session_state["scaled_ref_curves"]["Loess (without residues)"],
                 mode="lines",
-                name="Limons Grossiers-Loess",
+                name="Loess (without residues)",
             )
         )
         # fig.add_trace(
@@ -2031,7 +2036,7 @@ with tab_result:
                 height=800,
                 width=1000,
                 showlegend=True,
-                xaxis_title=" grain diametere (micrometers, log-scale)",
+                xaxis_title=" grain diameter (micrometers, log-scale)",
             )
             fig.update_traces(
                 hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
