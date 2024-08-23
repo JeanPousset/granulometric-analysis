@@ -6,7 +6,6 @@ import json
 import random
 from sklearn.decomposition import NMF
 import plotly.graph_objects as go
-import cvxpy as cp
 from functools import partial
 import subprocess
 import re
@@ -54,9 +53,9 @@ if "granulometrics" not in st.session_state:
 
 # region initialisation of session variables
 if 'nmf_errors' not in st.session_state:
-    st.session_state['nmf_errors'] = pd.DataFrame(columns=["L1 relative error", "l2 error"])
+    st.session_state['nmf_errors'] = pd.DataFrame(columns=["L1 relative error", "l2 error", "nb components"])
 if 'dd_errors' not in st.session_state:
-    st.session_state['dd_errors'] = pd.DataFrame(columns=["L1 relative error", "l2 error"])
+    st.session_state['dd_errors'] = pd.DataFrame(columns=["L1 relative error", "l2 error", "nb components"])
 if  'Prop_nmf' not in st.session_state:
     st.session_state["Prop_nmf"] = pd.DataFrame()
 if 'export_available_flag' not in st.session_state:
@@ -126,7 +125,7 @@ if "ref_curves" not in st.session_state:
     st.session_state["scaled_ref_curves"]["Argiles Classiques"] = (
         st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :] * 0.03
     )
-    st.session_state["scaled_ref_curves"]["Alterites"] = (
+    st.session_state["scaled_ref_curves"]["Limons d'altération"] = (
         st.session_state["ref_curves"]["ref_Alterites"][1, :] * 0.107063
     )
     # We prefer don't use raw Loess component curve
@@ -236,7 +235,7 @@ with tab_intro:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-                y=st.session_state["scaled_ref_curves"]["Alterites"],
+                y=st.session_state["scaled_ref_curves"]["Limons d'altération"],
                 mode="lines",
                 name="Limons d'altération (7-20 microns)",
             )
@@ -589,7 +588,7 @@ with tab_discrete_dict:
             st.number_input(
                 "Coefficient of penalization (lambda)",
                 key="lambda_nn_lasso",
-                value=2.0,
+                value=2.3,
                 min_value=0.0,
                 step=0.5,
             )
@@ -1176,12 +1175,20 @@ with tab_discrete_dict:
             nb_it_total_ls = 0
             start_time = time.time()
 
+            
+
+            # progress bar
+            prog_bar = st.progress(0,"")
             compute_advancement = st.empty()
             nb_done = 0
             nb_curves = len(st.session_state["granulometrics"])
+            frac_progress = 1/nb_curves
+
+
             for index, x_values in st.session_state["granulometrics"].iterrows():
                 with compute_advancement.container():
                     st.write(f"approximation ({nb_done+1} over {nb_curves}) -> label : {index}")
+                    prog_bar.progress(frac_progress*(nb_done+1))
                 # compute decomposition for our observation x_i
                 a_i, approx_i, it_i, it_ls_i = decomposition_algo(
                     x_values.to_numpy(), st.session_state["lambda_nn_lasso"]
@@ -1232,12 +1239,12 @@ with tab_discrete_dict:
 
                 # proportions
                 st.session_state["Prop_nn_lasso"][index] = merged_prop_dict_i
-                # st.session_state["Prop_nn_lasso"][index] = prop_dict_i
+                #st.session_state["Prop_nn_lasso"][index] = prop_dict_i
 
                 # errors
                 L1_rel = L1_relative(approx_i, index)
                 l2 = np.linalg.norm(approx_i - x_values,2)
-                new_row = {"L1 relative error": L1_rel,"l2 error":  l2}
+                new_row = {"L1 relative error": L1_rel,"l2 error":  l2, "nb components": int(len(merged_prop_dict_i))}
                 st.session_state['dd_errors'].loc[index] = new_row
                 nb_done += 1
 
@@ -1295,7 +1302,7 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["Alterites"],
+                y=st.session_state["scaled_ref_curves"]["Limons d'altération"],
                 mode="lines",
                 name="Limons d'altération (7-20 microns)",
             )
@@ -1466,11 +1473,12 @@ with tab_NMF:
                 columns=prop_col_label,
             )
 
-            # saving nmf errors
+            # saving nmf erros and nb components
+            nb_components = (np.round(Prop,1) != 0.0).sum(axis = 1)
             l2_nmf = np.linalg.norm(X_nmf - st.session_state["granulometrics"], axis=1)
             l1_rel_nmf = X_nmf.apply(lambda row: L1_relative(row.values, row.name), axis=1)
             errors_series_nmf = pd.Series({})
-            st.session_state['nmf_errors'] = pd.DataFrame({"L1 relative error": l1_rel_nmf,"l2 error":  l2_nmf}, index = st.session_state['granulometrics'].index)
+            st.session_state['nmf_errors'] = pd.DataFrame({"L1 relative error": l1_rel_nmf,"l2 error":  l2_nmf, "nb components": nb_components}, index = st.session_state['granulometrics'].index)
 
             # mean of errors
             st.session_state['L1_mean_nmf'] = np.mean(l1_rel_nmf)
@@ -1660,7 +1668,7 @@ with tab_NMF:
 #         fig.add_trace(
 #             go.Scatter(
 #                 x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-#                 y=st.session_state["scaled_ref_curves"]["Alterites"],
+#                 y=st.session_state["scaled_ref_curves"]["Limons d'altération"],
 #                 mode="lines",
 #                 name="Alterites (7-20 microns)",
 #             )
@@ -1873,7 +1881,7 @@ with tab_NMF:
 #             st.session_state["rc_label"] = [
 #                 "Argiles Fines",
 #                 "Argiles Grossier",
-#                 "Alterites",
+#                 "Limons d'altération",
 #                 "Sables Fins",
 #                 "Sables grossiers",
 #                 "Loess",
@@ -2189,6 +2197,14 @@ with tab_result:
                         label_visibility="visible",
                     )
                 col1, col2 = st.columns(2)
+                st.write("**Nb of components distribution**")
+                first_qt_nmf = np.percentile(st.session_state['nmf_errors']["nb components"],25)
+                third_qt_nmf = np.percentile(st.session_state['nmf_errors']["nb components"],75)
+                st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_nmf,0)}""")
+                st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_nmf,0)}""")
+                fig = go.Figure(data=[go.Histogram(x=st.session_state['nmf_errors']["nb components"])])
+                fig.update_layout(bargap=0.1)
+                st.plotly_chart(fig)
                 
 
         with col_dd:
@@ -2218,6 +2234,15 @@ with tab_result:
                         label_visibility="visible",
                     )
                 col1, col2 = st.columns(2)
+                
+                st.write("**Nb of components distribution**")
+                first_qt_dd = np.percentile(st.session_state['dd_errors']["nb components"],25)
+                third_qt_dd = np.percentile(st.session_state['dd_errors']["nb components"],75)
+                st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_dd,0)}""")
+                st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_dd,0)}""")
+                fig = go.Figure(data=[go.Histogram(x=st.session_state['dd_errors']["nb components"])])
+                fig.update_layout(bargap=0.1)
+                st.plotly_chart(fig)
                 
                 
 
