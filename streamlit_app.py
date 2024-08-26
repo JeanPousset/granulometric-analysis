@@ -52,6 +52,10 @@ if "granulometrics" not in st.session_state:
         "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, engine='openpyxl')
 
 # region initialisation of session variables
+if 'flag_other_dataset' not in st.session_state:
+    st.session_state['flag_other_dataset'] = False
+if 'cd_errors' not in st.session_state:
+    st.session_state['cd_errors'] = pd.DataFrame(columns=["L1 relative error", "l2 error", "nb components"])
 if 'nmf_errors' not in st.session_state:
     st.session_state['nmf_errors'] = pd.DataFrame(columns=["L1 relative error", "l2 error", "nb components"])
 if 'dd_errors' not in st.session_state:
@@ -88,6 +92,7 @@ if "X-X_hat-X_ref" not in st.session_state:
 # endregion
 
 # Loading reference curves
+
 if "ref_curves" not in st.session_state:
     st.session_state["ref_curves"] = {}  # empty initialization
     st.session_state["ref_curves"]["ref_ArgilesFines"] = np.genfromtxt(
@@ -146,9 +151,8 @@ if "ref_curves" not in st.session_state:
     )
 
 # region Other variables / functions
+
 # Integral approximations with trapeze method for every observation
-
-
 def trapeze_areas(x):
     # adding log10 to abscisse to have equal error important over the whole abscisse axis
     return 0.5 * np.sum(
@@ -156,7 +160,7 @@ def trapeze_areas(x):
             np.log10(st.session_state["granulometrics"].columns[1:].astype(float).to_numpy())
             - np.log10(st.session_state["granulometrics"].columns[:-1].astype(float).to_numpy())
         )
-        * (x[1:] + x[:-1])
+        * ((x[1:]) + (x[:-1]))
     )
 
 
@@ -455,7 +459,43 @@ with tab_continous_dict:
     col01, col02, col03 = st.columns([1, 3, 1])
     with col02:
         st.markdown("<h1 style='text-align: center;'>Continuous dictionnary</h1>", unsafe_allow_html=True)
-        st.markdown("---")        
+        st.markdown("---")
+        st.markdown("<h3 style='text-align: center;'>Import results</h3>", unsafe_allow_html=True)
+        st.markdown("""For copyright and implementation reasons, we cannot run algorithms for Blasso on this web application. 
+                    However, we can retrieve pre-calculated results for our basic data. Please select the $\\lambda$ of the results to import :""")
+        
+        st.selectbox("", options = ['10'], key = 'Blasso_λ', index = 0)
+        if st.session_state['Blasso_λ'] == '10':
+            blasso_approx = pd.read_csv('B-LASSO_imports/blasso_res_lambda10.csv', index_col = 0)
+            with open('B-LASSO_imports/prop_BLASSO_lambda10.json', 'r') as file:
+                st.session_state['blasso_Prop'] = json.load(file)       
+
+       
+        if st.session_state['Blasso_λ']:
+    
+            st.session_state['cd_flag'] = True
+            for label, approx in blasso_approx.iterrows():
+
+                # saving approx to use in results section
+                st.session_state["X-X_hat-X_ref"].loc[f"[CD]-{label}"] = np.array(approx)
+                # errors :
+                sample = st.session_state['granulometrics'].loc[label]
+                l2 = np.linalg.norm(np.array(approx)-np.array(sample), 2)
+                L1_rel = L1_relative(np.array(approx), label)
+                nb_comp = int(len(st.session_state['blasso_Prop'][label]))
+                new_row = {"L1 relative error": L1_rel,"l2 error":  l2, "nb components": nb_comp}
+                st.session_state["cd_errors"].loc[label] = new_row
+            
+            
+            st.session_state['L1_mean_cd'] = st.session_state['cd_errors']["L1 relative error"].mean()
+            st.session_state['l2_mean_cd'] = st.session_state['cd_errors']["l2 error"].mean()
+
+        else:
+            st.session_state['flag_cd'] = False
+
+
+        st.markdown("----")
+        # region comparaison with dd
         st.subheader("Graphique exemple of the method's interest")
 
         st.markdown(
@@ -463,13 +503,13 @@ with tab_continous_dict:
         )
 
         st.markdown(
-            f""" The first plot is the best approximation that is possible if we use a discrete dictionnary made
-                    by replicating curve and translate them by step : $\Delta = 1$. We can see that the approximation can't
+            """ The first plot is the best approximation that is possible if we use a discrete dictionnary made
+                    by replicating curve and translate them by step : $\\Delta = 1$. We can see that the approximation can't
                     overlap the observation because of because of this non-continuity."""
         )
 
         st.markdown(
-            f"""On the other hand in the second plot we can see that the B-Lasso approximation is perfect."""
+            """On the other hand in the second plot we can see that the B-Lasso approximation is perfect."""
         )
 
         if not st.session_state["flag_comparaison_curves_importation"]:
@@ -543,6 +583,7 @@ with tab_continous_dict:
         fig.update_traces(
             hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
         st.plotly_chart(fig)
+        # endregion
 
 
 with tab_discrete_dict:
@@ -552,7 +593,8 @@ with tab_discrete_dict:
         # region input param
 
         st.markdown("<h1 style='text-align: center;'>Discrete dictionnary</h1>", unsafe_allow_html=True)
-        st.markdown("---")        
+        st.markdown("---")                
+
         st.markdown(
             r"""In this section we try do decompose our observations with a discrete dictionnary 
                     of unimodale curves $(\mathcal{M})$ obtained by duplicating the reference curves and shifting the spike
@@ -1267,7 +1309,6 @@ with tab_discrete_dict:
 
             st.session_state["dd_flag"] = True
             # endregion
-
 
         # region scaled reference curves
         st.markdown("---")
@@ -2028,7 +2069,7 @@ with tab_result:
             options=labels_obs,
             key="selected_obs_labels",
         )
-    col2, col4 = st.columns(2)
+    col2, col3, col4 = st.columns(3)
     with col2:
         st.toggle(
             "Plot NMF approximations",
@@ -2050,7 +2091,7 @@ with tab_result:
     #         value=False,
     #         disabled=not st.session_state["rc_flag"],
     #     )
-    with col4:
+    with col3:
         st.toggle(
             "Plot discrete dictionnary approximations",
             key="flag_nnlasso_approx",
@@ -2063,6 +2104,20 @@ with tab_result:
             value = True,
             disabled=not st.session_state["dd_flag"]
         )
+    with col4:
+        st.toggle(
+            "Plot continuous dictionnary approximations",
+            key = "flag_blasso_approx",
+            value = True,
+            disabled= not st.session_state["cd_flag"] or st.session_state['flag_other_dataset']
+        )
+        st.toggle(
+            "Display continuous dictionnary component proportions and errors",
+            key = 'flag_cd_prop',
+            value = True,
+            disabled = not st.session_state["cd_flag"] or st.session_state['flag_other_dataset']
+        )
+
     st.markdown("---")
     st.info("Clic bellow to expand and view plot")
     with st.expander("**Plot**", icon ="📈",expanded = False):
@@ -2106,6 +2161,15 @@ with tab_result:
                             name=f"[DD]-{label}",
                         )
                     )
+                if not st.session_state['flag_other_dataset'] and st.session_state['flag_blasso_approx']:
+                    fig.add_trace(
+                        go.Scatter(
+                            x = curves_and_approx.columns,
+                            y = curves_and_approx.loc[f"[CD]-{label}"],
+                            mode="lines",
+                            name=f"[CD]-{label}",
+                        )
+                    )
 
             fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
             fig.update_layout(
@@ -2123,7 +2187,7 @@ with tab_result:
 
     
     if st.session_state['selected_obs_labels']:
-        col_nmf, col_dd, _ = st.columns(3)
+        col_nmf, col_dd, col_cd = st.columns(3)
         with col_nmf:
             if st.session_state["flag_nmf_prop"] and st.session_state["nmf_flag"]:
                 st.markdown("<h3 style='text-align: center;'>[NMF]</h3>", unsafe_allow_html=True)
@@ -2168,9 +2232,27 @@ with tab_result:
                         )
                     )])
                     st.plotly_chart(fig)
+    
+        with col_cd:
+            if st.session_state["flag_dd_prop"] and st.session_state["dd_flag"]:
+                st.markdown("<h3 style='text-align: center;'>[Continuous dictionnary]</h3>", unsafe_allow_html=True)
+                st.markdown("---")
+                st.write("**Proportions of components**")
+                for label in st.session_state["selected_obs_labels"]:
+                    prop = st.session_state['blasso_Prop'][label]
+                    fig = go.Figure(data=[go.Bar(
+                        x=list(prop.keys()),
+                        y=list(prop.values()),
+                        text = np.round(list(prop.values()),2),
+                        marker=dict(
+                            color=np.round(list(prop.values()),2),  
+                            colorscale='Inferno'
+                        )
+                    )])
+                    st.plotly_chart(fig)
                 
         
-        col_nmf, col_dd, _ = st.columns(3)
+        col_nmf, col_dd, col_cd = st.columns(3)
 
         with col_nmf:
             if st.session_state["flag_nmf_prop"] and st.session_state["nmf_flag"]:
@@ -2241,6 +2323,43 @@ with tab_result:
                 st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_dd,0)}""")
                 st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_dd,0)}""")
                 fig = go.Figure(data=[go.Histogram(x=st.session_state['dd_errors']["nb components"])])
+                fig.update_layout(bargap=0.1)
+                st.plotly_chart(fig)
+            
+        with col_cd:
+            if st.session_state["flag_cd_prop"] and st.session_state["cd_flag"]:
+                st.write("**Errors**")
+                for label in st.session_state["selected_obs_labels"]:
+                    st.table(st.session_state['cd_errors'].loc[label])
+                
+                st.write("**Average errors on all data**")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.latex(
+                        r""" \frac{1}{n}\sum_{i=1}^{n} \frac{\Vert x_i-\hat{x}_i \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
+                    )
+                with col2:
+                    st.metric(
+                        "mean of L1-relative errors (%)",
+                        value=f"{st.session_state['L1_mean_cd']:.3}%",
+                        label_visibility="visible",
+                    )
+                with col1:
+                    st.latex(r""" \frac{1}{n}\sum_{i=1}^{n} \Vert x_i-\hat{x}_i \Vert_2 """)
+                with col2:
+                    st.metric(
+                        "mean of quadratic (l2) errors",
+                        value=f"{st.session_state['l2_mean_cd']:.4}",
+                        label_visibility="visible",
+                    )
+                col1, col2 = st.columns(2)
+                
+                st.write("**Nb of components distribution**")
+                first_qt_dd = np.percentile(st.session_state['cd_errors']["nb components"],25)
+                third_qt_dd = np.percentile(st.session_state['cd_errors']["nb components"],75)
+                st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_dd,0)}""")
+                st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_dd,0)}""")
+                fig = go.Figure(data=[go.Histogram(x=st.session_state['cd_errors']["nb components"])])
                 fig.update_layout(bargap=0.1)
                 st.plotly_chart(fig)
                 
