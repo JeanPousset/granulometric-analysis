@@ -464,14 +464,31 @@ with tab_continous_dict:
         st.markdown("""For copyright and implementation reasons, we cannot run algorithms for Blasso on this web application. 
                     However, we can retrieve pre-calculated results for our basic data. Please select the $\\lambda$ of the results to import :""")
         
-        st.selectbox("", options = ['10'], key = 'Blasso_λ', index = 0)
-        if st.session_state['Blasso_λ'] == '10':
-            blasso_approx = pd.read_csv('B-LASSO_imports/blasso_res_lambda10.csv', index_col = 0)
-            with open('B-LASSO_imports/prop_BLASSO_lambda10.json', 'r') as file:
-                st.session_state['blasso_Prop'] = json.load(file)       
+        st.selectbox("", options = ["Select λ",'2','5','10'], key = 'Blasso_λ', index = 0)
+                          
 
        
-        if st.session_state['Blasso_λ']:
+        if st.session_state['Blasso_λ'] != "Select λ":
+            
+            import_directory = "B-LASSO_imports/"
+
+            # Select which approx to use
+            if st.session_state['Blasso_λ'] == '10':
+                csv_name = "blasso_res_lambda10.csv"
+                json_name = "prop_BLASSO_lambda10.json"
+            if st.session_state['Blasso_λ'] == '5':
+                csv_name = "blasso_res_lambda5.csv"
+                json_name = "prop_BLASSO_lambda5.json"
+            if st.session_state['Blasso_λ'] == '2':
+                csv_name = "blasso_res_lambda2.csv"
+                json_name = "prop_BLASSO_lambda2.json"
+            
+
+            # Importing approx
+            blasso_approx = pd.read_csv(import_directory+csv_name, index_col = 0)
+            with open(import_directory+json_name, 'r') as file:
+                st.session_state['blasso_Prop'] = json.load(file)
+
     
             st.session_state['cd_flag'] = True
             for label, approx in blasso_approx.iterrows():
