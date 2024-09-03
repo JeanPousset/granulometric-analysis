@@ -464,7 +464,7 @@ with tab_continous_dict:
         st.markdown("""For copyright and implementation reasons, we cannot run algorithms for Blasso on this web application. 
                     However, we can retrieve pre-calculated results for our basic data. Please select the $\\lambda$ of the results to import :""")
         
-        st.selectbox("", options = ["Select λ",'2','5','10'], key = 'Blasso_λ', index = 0)
+        st.selectbox("", options = ["Select λ",'0.001','0.05','0.1','0.5','1','2','5','10'], key = 'Blasso_λ', index = 0)
                           
 
        
@@ -482,7 +482,22 @@ with tab_continous_dict:
             if st.session_state['Blasso_λ'] == '2':
                 csv_name = "blasso_res_lambda2.csv"
                 json_name = "prop_BLASSO_lambda2.json"
-            
+            if st.session_state['Blasso_λ'] == '1':
+                csv_name = "blasso_res_lambda1.csv"
+                json_name = "prop_BLASSO_lambda1.json"
+            if st.session_state['Blasso_λ'] == '0.5':
+                csv_name = "blasso_res_lambda05.csv"
+                json_name = "prop_BLASSO_lambda05.json"
+            if st.session_state['Blasso_λ'] == '0.1':
+                csv_name = "blasso_res_lambda01.csv"
+                json_name = "prop_BLASSO_lambda01.json"
+            if st.session_state['Blasso_λ'] == '0.05':
+                csv_name = "blasso_res_lambda005.csv"
+                json_name = "prop_BLASSO_lambda005.json"
+            if st.session_state['Blasso_λ'] == '0.001':
+                csv_name = "blasso_res_lambda001.csv"
+                json_name = "prop_BLASSO_lambda001.json"
+
 
             # Importing approx
             blasso_approx = pd.read_csv(import_directory+csv_name, index_col = 0)
@@ -508,7 +523,7 @@ with tab_continous_dict:
             st.session_state['l2_mean_cd'] = st.session_state['cd_errors']["l2 error"].mean()
 
         else:
-            st.session_state['flag_cd'] = False
+            st.session_state['cd_flag'] = False
 
 
         st.markdown("----")
@@ -1484,6 +1499,7 @@ with tab_NMF:
         st.header("Algorithm")
 
         if st.button("Lunch basic factorization"):
+            begin_nmf = time.time()
             X = st.session_state["granulometrics"].to_numpy()
             model = NMF(
                 n_components=st.session_state["nb_end_members"],
@@ -1530,6 +1546,7 @@ with tab_NMF:
                 index=st.session_state["granulometrics"].index,
                 columns=prop_col_label,
             )
+            end_nmf = time.time()
 
             # saving nmf erros and nb components
             nb_components = (np.round(Prop,1) != 0.0).sum(axis = 1)
@@ -1557,7 +1574,7 @@ with tab_NMF:
                 )
                 st.session_state["nmf_flag"] = True  # They are now result
 
-            st.success("Approximation succeed")
+            st.success(f"Approximation succeed ! exec time = {round(end_nmf-begin_nmf,3)} seconds")
             # Displaying approx errors
             col1, col2 = st.columns(2)
             with col1:
@@ -1684,7 +1701,7 @@ with tab_NMF:
 
                 st.plotly_chart(fig)
 
-
+# region tab_rc
 # with tab_rc:
 #     col01, col02, col03 = st.columns([1, 3, 1])
 #     with col02:
@@ -2067,7 +2084,7 @@ with tab_NMF:
 #                     value=f"{errL1_approx_rc:.3}%",
 #                     label_visibility="visible",
 #                 )
-
+# endregion
 
 with tab_result:
     st.markdown("<h1 style='text-align: center;'>Results</h1>", unsafe_allow_html=True)
@@ -2178,7 +2195,7 @@ with tab_result:
                             name=f"[DD]-{label}",
                         )
                     )
-                if not st.session_state['flag_other_dataset'] and st.session_state['flag_blasso_approx']:
+                if not st.session_state['flag_other_dataset'] and st.session_state['cd_flag']:
                     fig.add_trace(
                         go.Scatter(
                             x = curves_and_approx.columns,
@@ -2251,7 +2268,7 @@ with tab_result:
                     st.plotly_chart(fig)
     
         with col_cd:
-            if st.session_state["flag_dd_prop"] and st.session_state["dd_flag"]:
+            if st.session_state["flag_cd_prop"] and st.session_state["cd_flag"]:
                 st.markdown("<h3 style='text-align: center;'>[Continuous dictionnary]</h3>", unsafe_allow_html=True)
                 st.markdown("---")
                 st.write("**Proportions of components**")
@@ -2301,8 +2318,9 @@ with tab_result:
                 third_qt_nmf = np.percentile(st.session_state['nmf_errors']["nb components"],75)
                 st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_nmf,0)}""")
                 st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_nmf,0)}""")
+                st.markdown("<h5 style='text-align: center;'>[NMF]</h5>", unsafe_allow_html=True)
                 fig = go.Figure(data=[go.Histogram(x=st.session_state['nmf_errors']["nb components"])])
-                fig.update_layout(bargap=0.1)
+                fig.update_layout(bargap=0.1, title = "")
                 st.plotly_chart(fig)
                 
 
@@ -2339,8 +2357,9 @@ with tab_result:
                 third_qt_dd = np.percentile(st.session_state['dd_errors']["nb components"],75)
                 st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_dd,0)}""")
                 st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_dd,0)}""")
+                st.markdown("<h5 style='text-align: center;'>[Discrete dictionnary]</h5>", unsafe_allow_html=True)
                 fig = go.Figure(data=[go.Histogram(x=st.session_state['dd_errors']["nb components"])])
-                fig.update_layout(bargap=0.1)
+                fig.update_layout(bargap=0.1, title = "")
                 st.plotly_chart(fig)
             
         with col_cd:
@@ -2376,8 +2395,9 @@ with tab_result:
                 third_qt_dd = np.percentile(st.session_state['cd_errors']["nb components"],75)
                 st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_dd,0)}""")
                 st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_dd,0)}""")
+                st.markdown("<h5 style='text-align: center;'>[Continuous dictionnary]</h5>", unsafe_allow_html=True)
                 fig = go.Figure(data=[go.Histogram(x=st.session_state['cd_errors']["nb components"])])
-                fig.update_layout(bargap=0.1)
+                fig.update_layout(bargap=0.1, title = "")
                 st.plotly_chart(fig)
                 
                 
