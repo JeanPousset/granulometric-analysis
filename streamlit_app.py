@@ -130,7 +130,7 @@ if "ref_curves" not in st.session_state:
     st.session_state["scaled_ref_curves"]["Argiles Classiques"] = (
         st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :] * 0.03
     )
-    st.session_state["scaled_ref_curves"]["Limons d'altération"] = (
+    st.session_state["scaled_ref_curves"]["Limons fins"] = (
         st.session_state["ref_curves"]["ref_Alterites"][1, :] * 0.107063
     )
     # We prefer don't use raw Loess component curve
@@ -140,7 +140,7 @@ if "ref_curves" not in st.session_state:
     st.session_state["scaled_ref_curves"]["Limons Grossiers"] = (
         st.session_state["ref_curves"]["ref_LimonsGrossiers"][1, :] * 0.11
     )
-    st.session_state["scaled_ref_curves"]["Loess (without residues)"] = (
+    st.session_state["scaled_ref_curves"]["Loess"] = (
         st.session_state["ref_curves"]["ref_Loess_without_residules"][1, :] * 0.06
     )
     st.session_state["scaled_ref_curves"]["Sables Fins"] = (
@@ -179,8 +179,8 @@ materials = {
     "Autre": 0.03,
     "Argile Fines": 1,
     "Argile Grossières": 7,
-    "Limons d'alteration": 20,
-    "Limons/Loess": 50,
+    "Limons fins": 20,
+    "Limons grossiers/Loess": 50,
     "Sables Fin": 100,
     "Sables Grossiers": 2400,
 }
@@ -219,11 +219,12 @@ with tab_intro:
                 name="Argiles Fines (<1 microns)",
             )
         )
-        fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+        fig.update_xaxes(type="log", tickformat=".1f", dtick=1, showgrid=True)
         fig.update_layout(
             height=500,
             showlegend=True,
-            xaxis_title=" grain diameter (micrometers, log-scale)",
+            legend = {'font':{'size' : 20}},
+            xaxis={'title': {'text': "grain size (micrometers, log-scale)", 'font': {'size': 20}}}
         )
         fig.update_traces(
             hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
@@ -239,9 +240,9 @@ with tab_intro:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-                y=st.session_state["scaled_ref_curves"]["Limons d'altération"],
+                y=st.session_state["scaled_ref_curves"]["Limons fins"],
                 mode="lines",
-                name="Limons d'altération (7-20 microns)",
+                name="Limons fins (7-20 microns)",
             )
         )
         fig.add_trace(
@@ -271,9 +272,9 @@ with tab_intro:
         fig.add_trace(
             go.Scatter(
                 x=st.session_state["ref_curves"]["ref_Loess_without_residules"][0, :],
-                y=st.session_state["scaled_ref_curves"]["Loess (without residues)"],
+                y=st.session_state["scaled_ref_curves"]["Loess"],
                 mode="lines",
-                name="Loess (without residues) (20-50 microns)",
+                name="Loess (20-50 microns)",
             )
         )
         st.plotly_chart(fig)
@@ -1375,9 +1376,9 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["Limons d'altération"],
+                y=st.session_state["scaled_ref_curves"]["Limons fins"],
                 mode="lines",
-                name="Limons d'altération (7-20 microns)",
+                name="Limons fins (7-20 microns)",
             )
         )
         fig.add_trace(
@@ -1399,7 +1400,7 @@ with tab_discrete_dict:
         fig.add_trace(
             go.Scatter(
                 x=abscisses,
-                y=st.session_state["scaled_ref_curves"]["Loess (without residues)"],
+                y=st.session_state["scaled_ref_curves"]["Loess"],
                 mode="lines",
                 name="Loess sans limons (20-50 microns)",
             )
@@ -1417,15 +1418,16 @@ with tab_discrete_dict:
                 x=abscisses,
                 y=st.session_state["scaled_ref_curves"]["Sables Grossiers"],
                 mode="lines",
-                name="Sables grossires (>100 microns)",
+                name="Sables grossiers (>100 microns)",
             )
         )
 
-        fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+        fig.update_xaxes(type="log", tickformat=".1f", dtick=1, showgrid=True)
         fig.update_layout(
             height=500,
             showlegend=True,
-            xaxis_title=" grain diametere (micrometers, log-scale)",
+            legend = {'font':{'size' : 20}},
+            xaxis={'title': {'text': "grain size (micrometers, log-scale)", 'font': {'size': 20}}}
         )
         fig.update_traces(
             hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
@@ -1623,7 +1625,7 @@ with tab_NMF:
                         col=col,
                     )
 
-                fig.update_xaxes(type="log", tickformat=".1e",
+                fig.update_xaxes(type="log", tickformat=".1f",
                                  dtick=1, showgrid=True)
                 fig.update_yaxes(showgrid=True)
                 fig.update_layout(
@@ -1743,7 +1745,7 @@ with tab_NMF:
 #         fig.add_trace(
 #             go.Scatter(
 #                 x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-#                 y=st.session_state["scaled_ref_curves"]["Limons d'altération"],
+#                 y=st.session_state["scaled_ref_curves"]["Limons fins"],
 #                 mode="lines",
 #                 name="Alterites (7-20 microns)",
 #             )
@@ -1956,7 +1958,7 @@ with tab_NMF:
 #             st.session_state["rc_label"] = [
 #                 "Argiles Fines",
 #                 "Argiles Grossier",
-#                 "Limons d'altération",
+#                 "Limons fins",
 #                 "Sables Fins",
 #                 "Sables grossiers",
 #                 "Loess",
@@ -2166,6 +2168,7 @@ with tab_result:
                         y=curves_and_approx.loc[label],
                         mode="lines",
                         name=label,
+                        line = {'width' : 3}
                     )
                 )
                 if st.session_state["flag_nmf_approx"] and st.session_state['nmf_flag']:
@@ -2175,6 +2178,7 @@ with tab_result:
                             y=curves_and_approx.loc[f"[NMF]-{label}"],
                             mode="lines",
                             name=f"[NMF]-{label}",
+                            line = {'width' : 3}                            
                         )
                     )
                 # if st.session_state["flag_rc_approx"]:
@@ -2193,6 +2197,7 @@ with tab_result:
                             y=curves_and_approx.loc[f"[DD]-{label}"],
                             mode="lines",
                             name=f"[DD]-{label}",
+                            line = {'width' : 3}
                         )
                     )
                 if not st.session_state['flag_other_dataset'] and st.session_state['cd_flag']:
@@ -2202,15 +2207,17 @@ with tab_result:
                             y = curves_and_approx.loc[f"[CD]-{label}"],
                             mode="lines",
                             name=f"[CD]-{label}",
+                            line = {'width' : 3}
                         )
                     )
 
-            fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+            fig.update_xaxes(type="log", tickformat='.1f', dtick=1, showgrid=True)
             fig.update_layout(
                 height=800,
-                width=1000,
+                width=1200,
                 showlegend=True,
-                xaxis_title=" grain diameter (micrometers, log-scale)",
+                legend = {'font':{'size' : 40}},
+                xaxis={'title': {'text': "grain size (micrometers, log-scale)", 'font': {'size': 35}}, 'tickfont' : {'size' : 20}}
             )
             fig.update_traces(
                 hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
@@ -2226,9 +2233,6 @@ with tab_result:
             if st.session_state["flag_nmf_prop"] and st.session_state["nmf_flag"]:
                 st.markdown("<h3 style='text-align: center;'>[NMF]</h3>", unsafe_allow_html=True)
                 st.markdown("---")
-                st.write(f"**Proportion of end-members**")
-                
-                #st.session_state["Prop_nmf"].loc[st.session_state["selected_obs_labels"]].transpose()
                 for label in st.session_state["selected_obs_labels"]:
                     prop = st.session_state['Prop_nmf'].loc[label]
                     fig = go.Figure(data=[go.Bar(
@@ -2240,6 +2244,11 @@ with tab_result:
                             colorscale='Inferno'
                         )
                     )])
+                    fig.update_layout(
+                        title = "Proportions of components (NMF)", 
+                        xaxis = {'tickfont' : {'size' : 15}}, 
+                        height = 400,
+                        margin=dict(l=0, r=0, t=30, b=0))
                     st.plotly_chart(fig)
 
             # if st.session_state["rc_flag"]:
@@ -2253,7 +2262,6 @@ with tab_result:
             if st.session_state["flag_dd_prop"] and st.session_state["dd_flag"]:
                 st.markdown("<h3 style='text-align: center;'>[Discrete dictionnary]</h3>", unsafe_allow_html=True)
                 st.markdown("---")
-                st.write("**Proportions of components**")
                 for label in st.session_state["selected_obs_labels"]:
                     prop = st.session_state['Prop_nn_lasso'][label]
                     fig = go.Figure(data=[go.Bar(
@@ -2265,13 +2273,18 @@ with tab_result:
                             colorscale='Inferno'
                         )
                     )])
+                    fig.update_layout(
+                        title = "Proportions of components (DD)", 
+                        xaxis = {'tickfont' : {'size' : 15}}, 
+                        height = 400,
+                        margin=dict(l=0, r=0, t=30, b=0))
                     st.plotly_chart(fig)
+                    
     
         with col_cd:
             if st.session_state["flag_cd_prop"] and st.session_state["cd_flag"]:
                 st.markdown("<h3 style='text-align: center;'>[Continuous dictionnary]</h3>", unsafe_allow_html=True)
                 st.markdown("---")
-                st.write("**Proportions of components**")
                 for label in st.session_state["selected_obs_labels"]:
                     prop = st.session_state['blasso_Prop'][label]
                     fig = go.Figure(data=[go.Bar(
@@ -2283,6 +2296,11 @@ with tab_result:
                             colorscale='Inferno'
                         )
                     )])
+                    fig.update_layout(
+                        title = "Proportions of components (CD)", 
+                        xaxis = {'tickfont' : {'size' : 15}}, 
+                        height = 400,
+                        margin=dict(l=0, r=0, t=30, b=0))
                     st.plotly_chart(fig)
                 
         
@@ -2290,7 +2308,7 @@ with tab_result:
 
         with col_nmf:
             if st.session_state["flag_nmf_prop"] and st.session_state["nmf_flag"]:
-                st.write("**Errors for selected observation**")
+                st.write("**Errors (NMF)**")
                 st.table(st.session_state['nmf_errors'].loc[st.session_state["selected_obs_labels"]].transpose())
                 st.write("**Average errors on all data**")
                 col1, col2 = st.columns(2)
@@ -2312,21 +2330,17 @@ with tab_result:
                         value=f"{st.session_state['l2_mean_nmf']:.4}",
                         label_visibility="visible",
                     )
-                col1, col2 = st.columns(2)
-                st.write("**Nb of components distribution**")
-                first_qt_nmf = np.percentile(st.session_state['nmf_errors']["nb components"],25)
-                third_qt_nmf = np.percentile(st.session_state['nmf_errors']["nb components"],75)
-                st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_nmf,0)}""")
-                st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_nmf,0)}""")
-                st.markdown("<h5 style='text-align: center;'>[NMF]</h5>", unsafe_allow_html=True)
+
+                st.markdown("<h5 style='text-align: center;'>[NMF]<br>Nb of components distribution</h5>", unsafe_allow_html=True)
                 fig = go.Figure(data=[go.Histogram(x=st.session_state['nmf_errors']["nb components"])])
-                fig.update_layout(bargap=0.1, title = "")
+                fig.update_layout(bargap=0.1, xaxis = {'tickfont' : {'size' : 30}}, height = 300, margin=dict(l=0, r=0, t=0, b=0))
                 st.plotly_chart(fig)
+            
                 
 
         with col_dd:
             if st.session_state["flag_dd_prop"] and st.session_state["dd_flag"]:
-                st.write("**Errors**")
+                st.write("**Errors (DD)**")
                 for label in st.session_state["selected_obs_labels"]:
                     st.table(st.session_state['dd_errors'].loc[label])
                 
@@ -2350,21 +2364,15 @@ with tab_result:
                         value=f"{st.session_state['l2_mean_dd']:.4}",
                         label_visibility="visible",
                     )
-                col1, col2 = st.columns(2)
                 
-                st.write("**Nb of components distribution**")
-                first_qt_dd = np.percentile(st.session_state['dd_errors']["nb components"],25)
-                third_qt_dd = np.percentile(st.session_state['dd_errors']["nb components"],75)
-                st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_dd,0)}""")
-                st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_dd,0)}""")
-                st.markdown("<h5 style='text-align: center;'>[Discrete dictionnary]</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center;'>[Discrete dictionnary]<br>Nb of components distribution</h5>", unsafe_allow_html=True)
                 fig = go.Figure(data=[go.Histogram(x=st.session_state['dd_errors']["nb components"])])
-                fig.update_layout(bargap=0.1, title = "")
+                fig.update_layout(bargap=0.1, xaxis = {'tickfont' : {'size' : 30}}, height = 300, margin=dict(l=0, r=0, t=0, b=0))
                 st.plotly_chart(fig)
             
         with col_cd:
             if st.session_state["flag_cd_prop"] and st.session_state["cd_flag"]:
-                st.write("**Errors**")
+                st.write("**Errors (CD)**")
                 for label in st.session_state["selected_obs_labels"]:
                     st.table(st.session_state['cd_errors'].loc[label])
                 
@@ -2387,17 +2395,10 @@ with tab_result:
                         "mean of quadratic (l2) errors",
                         value=f"{st.session_state['l2_mean_cd']:.4}",
                         label_visibility="visible",
-                    )
-                col1, col2 = st.columns(2)
-                
-                st.write("**Nb of components distribution**")
-                first_qt_dd = np.percentile(st.session_state['cd_errors']["nb components"],25)
-                third_qt_dd = np.percentile(st.session_state['cd_errors']["nb components"],75)
-                st.markdown(f"""$\\bullet$ 1st quartile : {round(first_qt_dd,0)}""")
-                st.markdown(f"""$\\bullet$ 3rd quartile : {round(third_qt_dd,0)}""")
-                st.markdown("<h5 style='text-align: center;'>[Continuous dictionnary]</h5>", unsafe_allow_html=True)
+                    )                
+                st.markdown("<h5 style='text-align: center;'>[Continuous dictionnary]<br>Nb of components distribution</h5>", unsafe_allow_html=True)
                 fig = go.Figure(data=[go.Histogram(x=st.session_state['cd_errors']["nb components"])])
-                fig.update_layout(bargap=0.1, title = "")
+                fig.update_layout(bargap=0.1, xaxis = {'tickfont' : {'size' : 30}}, height = 300, margin=dict(l=0, r=0, t=0, b=0))
                 st.plotly_chart(fig)
                 
                 
