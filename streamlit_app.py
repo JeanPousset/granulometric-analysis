@@ -459,46 +459,81 @@ with tab_intro:
 with tab_continous_dict:
     col01, col02, col03 = st.columns([1, 3, 1])
     with col02:
-        st.markdown("<h1 style='text-align: center;'>Continuous dictionnary</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center;'>Continuous dictionary</h1>", unsafe_allow_html=True)
         st.markdown("---")
         st.markdown("<h3 style='text-align: center;'>Import results</h3>", unsafe_allow_html=True)
         st.markdown("""For copyright and implementation reasons, we cannot run algorithms for Blasso on this web application. 
                     However, we can retrieve pre-calculated results for our basic data. Please select the $\\lambda$ of the results to import :""")
         
-        st.selectbox("", options = ["Select λ",'0.001','0.05','0.1','0.5','1','2','5','10'], key = 'Blasso_λ', index = 0)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.selectbox("**Select dictionnary**",
+                options = [
+                    "None", 
+                    "Gaussian 1 param (variance : 0.05)",
+                    "Gaussian 2 param",
+                    "Skew gaussian 1 param ()",
+                    "Skew gaussian 2 param (shape fixed)",
+                ],
+                key = 'Blasso_dict', index = 0)
+        with col2:
+            st.selectbox("**Choose λ**", options = ['None','1e-5','1e-4','0.001','0.005','0.01','0.05','0.1','0.5','1','2','5','10'], key = 'Blasso_λ', index = 0)
                           
 
-       
-        if st.session_state['Blasso_λ'] != "Select λ":
+        if st.session_state['Blasso_λ'] != 'None':
+        
+            if st.session_state['Blasso_dict'] == "Gaussian 1 param (variance : 0.05)":
+                res_first_name = "blass_res_"
+                prop_first_name = "prop_BLASSO_"
             
-            import_directory = "B-LASSO_imports/"
+            if st.session_state['Blasso_dict'] == "Gaussian 2 param":
+                st.write("Activation 2")
+                res_first_name = "blasso_res_gauss2p_"
+                prop_first_name = "prop_BLASSO_gauss2p_"
+            
+            if st.session_state['Blasso_dict'] == "Skew gaussian 2 param (shape fixed)":
+                st.write("Activation 2")
+                res_first_name = "blasso_res_skewgaussian2p_"
+                prop_first_name = "prop_BLASSO_skewgaussian2p_"
 
+            import_directory = "B-LASSO_imports/"
             # Select which approx to use
             if st.session_state['Blasso_λ'] == '10':
-                csv_name = "blasso_res_lambda10.csv"
-                json_name = "prop_BLASSO_lambda10.json"
+                csv_name = res_first_name+"lambda10.csv"
+                json_name = prop_first_name+"lambda10.json"
             if st.session_state['Blasso_λ'] == '5':
-                csv_name = "blasso_res_lambda5.csv"
-                json_name = "prop_BLASSO_lambda5.json"
+                csv_name = res_first_name+"lambda5.csv"
+                json_name = prop_first_name+"lambda5.json"
             if st.session_state['Blasso_λ'] == '2':
-                csv_name = "blasso_res_lambda2.csv"
-                json_name = "prop_BLASSO_lambda2.json"
+                csv_name = res_first_name+"lambda2.csv"
+                json_name = prop_first_name+"lambda2.json"
             if st.session_state['Blasso_λ'] == '1':
-                csv_name = "blasso_res_lambda1.csv"
-                json_name = "prop_BLASSO_lambda1.json"
+                csv_name = res_first_name+"lambda1.csv"
+                json_name = prop_first_name+"lambda1.json"
             if st.session_state['Blasso_λ'] == '0.5':
-                csv_name = "blasso_res_lambda05.csv"
-                json_name = "prop_BLASSO_lambda05.json"
+                csv_name = res_first_name+"lambda05.csv"
+                json_name = prop_first_name+"lambda05.json"
             if st.session_state['Blasso_λ'] == '0.1':
-                csv_name = "blasso_res_lambda01.csv"
-                json_name = "prop_BLASSO_lambda01.json"
+                csv_name = res_first_name+"lambda01.csv"
+                json_name = prop_first_name+"lambda01.json"
             if st.session_state['Blasso_λ'] == '0.05':
-                csv_name = "blasso_res_lambda005.csv"
-                json_name = "prop_BLASSO_lambda005.json"
+                csv_name = res_first_name+"lambda005.csv"
+                json_name = prop_first_name+"lambda005.json"
+            if st.session_state['Blasso_λ'] == '0.01':
+                csv_name = res_first_name+"lambda001.csv"
+                json_name = prop_first_name+"lambda001.json"
+            if st.session_state['Blasso_λ'] == '0.005':
+                csv_name = res_first_name+"lambda0005.csv"
+                json_name = prop_first_name+"lambda0005.json"
             if st.session_state['Blasso_λ'] == '0.001':
-                csv_name = "blasso_res_lambda001.csv"
-                json_name = "prop_BLASSO_lambda001.json"
-
+                csv_name = res_first_name+"lambda0001.csv"
+                json_name = prop_first_name+"lambda0001.json"
+            if st.session_state['Blasso_λ'] == '1e-4':
+                csv_name = res_first_name+"lambda_1e-4.csv"
+                json_name = prop_first_name+"lambda_1e-4.json"
+            if st.session_state['Blasso_λ'] == '1e-5':
+                csv_name = res_first_name+"lambda_1e-5.csv"
+                json_name = prop_first_name+"lambda_1e-5.json"
 
             # Importing approx
             blasso_approx = pd.read_csv(import_directory+csv_name, index_col = 0)
@@ -743,6 +778,7 @@ with tab_discrete_dict:
 
             M = np.transpose(
                 st.session_state["discrete_dictionnary"].to_numpy())
+            
             # hyper-parameters
             it_max = 2e3
             MtM = np.dot(M.T, M)  # saving result to optimize
