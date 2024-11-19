@@ -52,6 +52,8 @@ if "granulometrics" not in st.session_state:
         "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, engine='openpyxl')
 
 # region initialisation of session variables
+if 'result_exporation_available' not in st.session_state:
+    st.session_state['result_exporation_available'] = False
 if 'flag_other_dataset' not in st.session_state:
     st.session_state['flag_other_dataset'] = False
 if 'cd_errors' not in st.session_state:
@@ -178,7 +180,7 @@ def L1_relative(x_approx, obs_index):
 materials = {
     "Autre": 0.03,
     "Argile Fines": 1,
-    "Argile Grossières": 7,
+    "Argile Grossieres": 7,
     "Limons fins": 20,
     "Limons grossiers/Loess": 50,
     "Sables Fin": 100,
@@ -234,7 +236,7 @@ with tab_intro:
                 x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
                 y=st.session_state["scaled_ref_curves"]["Argiles Classiques"],
                 mode="lines",
-                name="Argiles Grossières (1-7 microns)",
+                name="Argiles Grossieres (1-7 microns)",
             )
         )
         fig.add_trace(
@@ -280,6 +282,7 @@ with tab_intro:
         st.plotly_chart(fig)
         # endregion
         
+        # region data_management
 
         st.markdown("---")
         st.header("Data management")
@@ -455,6 +458,8 @@ with tab_intro:
                     st.success(
                         "Database reset made, please reload the page to apply changes.")
 
+        # endregion
+
 
 with tab_continous_dict:
     col01, col02, col03 = st.columns([1, 3, 1])
@@ -487,12 +492,10 @@ with tab_continous_dict:
                 prop_first_name = "prop_BLASSO_"
             
             if st.session_state['Blasso_dict'] == "Gaussian 2 param":
-                st.write("Activation 2")
                 res_first_name = "blasso_res_gauss2p_"
                 prop_first_name = "prop_BLASSO_gauss2p_"
             
             if st.session_state['Blasso_dict'] == "Skew gaussian 2 param (shape fixed)":
-                st.write("Activation 2")
                 res_first_name = "blasso_res_skewgaussian2p_"
                 prop_first_name = "prop_BLASSO_skewgaussian2p_"
 
@@ -692,7 +695,7 @@ with tab_discrete_dict:
             key="nn_lasso_method",
         )
 
-        col2, col3, col4 = st.columns([2, 1, 2])
+        col2, col3, col4 = st.columns([1.8, 1.2, 2])
 
         with col2:
             st.number_input(
@@ -1406,7 +1409,7 @@ with tab_discrete_dict:
                 x=abscisses,
                 y=st.session_state["scaled_ref_curves"]["Argiles Classiques"],
                 mode="lines",
-                name="Argiles grossières (1-7 microns)",
+                name="Argiles grossieres (1-7 microns)",
             )
         )
         fig.add_trace(
@@ -1484,8 +1487,8 @@ with tab_NMF:
                     """
         )
         penalization = r'''\begin{align*}
-    \arg \min_{X,M}~ & D_\beta(Y\vert XM)\\ &+2\alpha_M l_{1_\text{ratio}} m\Vert M \Vert_1 \\& +2 \alpha_X l_{1_\text{ratio}} n\Vert X \Vert_1 \\ &+ \alpha_M (1-l_1{_\text{ratio}}) m\Vert M \Vert_F^2 \\ &+\alpha_X(1-l_1{_\text{ratio}}) n\Vert X \Vert_F^2 
-\end{align*}'''
+        \arg \min_{X,M}~ & D_\beta(Y\vert XM)\\ &+2\alpha_M l_{1_\text{ratio}} m\Vert M \Vert_1 \\& +2 \alpha_X l_{1_\text{ratio}} n\Vert X \Vert_1 \\ &+ \alpha_M (1-l_1{_\text{ratio}}) m\Vert M \Vert_F^2 \\ &+\alpha_X(1-l_1{_\text{ratio}}) n\Vert X \Vert_F^2 
+        \end{align*}'''
         st.latex(penalization)
 
         st.write("")
@@ -1775,7 +1778,7 @@ with tab_NMF:
 #                 x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
 #                 y=st.session_state["scaled_ref_curves"]["Argiles Classiques"],
 #                 mode="lines",
-#                 name="Argiles Grossières (1-7 microns)",
+#                 name="Argiles Grossieres (1-7 microns)",
 #             )
 #         )
 #         fig.add_trace(
@@ -1866,7 +1869,7 @@ with tab_NMF:
 #                     x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
 #                     y=st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :],
 #                     mode="lines",
-#                     name="Argiles Grossières (1-7 microns)",
+#                     name="Argiles Grossieres (1-7 microns)",
 #                 )
 #             )
 #             fig.add_trace(
@@ -2191,76 +2194,156 @@ with tab_result:
         )
 
     st.markdown("---")
-    st.info("Clic bellow to expand and view plot")
-    with st.expander("**Plot**", icon ="📈",expanded = False):
-        if st.session_state['selected_obs_labels']:
+    col1, col2 = st.columns(2)
 
-            curves_and_approx = st.session_state["X-X_hat-X_ref"]
-            fig = go.Figure()
-            for label in st.session_state["selected_obs_labels"]:
-                fig.add_trace(
-                    go.Scatter(
-                        x=curves_and_approx.columns,
-                        y=curves_and_approx.loc[label],
-                        mode="lines",
-                        name=label,
-                        line = {'width' : 3}
+    with col1:
+        st.info("Clic bellow to expand and view plot")
+        with st.expander("**Plot**", icon ="📈",expanded = False):
+            if st.session_state['selected_obs_labels']:
+
+                curves_and_approx = st.session_state["X-X_hat-X_ref"]
+                fig = go.Figure()
+                for label in st.session_state["selected_obs_labels"]:
+                    fig.add_trace(
+                        go.Scatter(
+                            x=curves_and_approx.columns,
+                            y=curves_and_approx.loc[label],
+                            mode="lines",
+                            name=label,
+                            line = {'width' : 3}
+                        )
                     )
+                    if st.session_state["flag_nmf_approx"] and st.session_state['nmf_flag']:
+                        fig.add_trace(
+                            go.Scatter(
+                                x=curves_and_approx.columns,
+                                y=curves_and_approx.loc[f"[NMF]-{label}"],
+                                mode="lines",
+                                name=f"[NMF]-{label}",
+                                line = {'width' : 3}                            
+                            )
+                        )
+                    # if st.session_state["flag_rc_approx"]:
+                    #     fig.add_trace(
+                    #         go.Scatter(
+                    #             x=curves_and_approx.columns,
+                    #             y=curves_and_approx.loc[f"r{label}"],
+                    #             mode="lines",
+                    #             name=f"r{label}",
+                    #         )
+                    #     )
+                    if st.session_state["flag_nnlasso_approx"] and st.session_state['dd_flag']:
+                        fig.add_trace(
+                            go.Scatter(
+                                x=curves_and_approx.columns,
+                                y=curves_and_approx.loc[f"[DD]-{label}"],
+                                mode="lines",
+                                name=f"[DD]-{label}",
+                                line = {'width' : 3}
+                            )
+                        )
+                    if not st.session_state['flag_other_dataset'] and st.session_state['cd_flag']:
+                        fig.add_trace(
+                            go.Scatter(
+                                x = curves_and_approx.columns,
+                                y = curves_and_approx.loc[f"[CD]-{label}"],
+                                mode="lines",
+                                name=f"[CD]-{label}",
+                                line = {'width' : 3}
+                            )
+                        )
+
+                fig.update_xaxes(type="log", tickformat='.1f', dtick=1, showgrid=True)
+                fig.update_layout(
+                    height=800,
+                    width=1200,
+                    showlegend=True,
+                    legend = {'font':{'size' : 40}},
+                    xaxis={'title': {'text': "grain size (micrometers, log-scale)", 'font': {'size': 35}}, 'tickfont' : {'size' : 20}}
                 )
-                if st.session_state["flag_nmf_approx"] and st.session_state['nmf_flag']:
-                    fig.add_trace(
-                        go.Scatter(
-                            x=curves_and_approx.columns,
-                            y=curves_and_approx.loc[f"[NMF]-{label}"],
-                            mode="lines",
-                            name=f"[NMF]-{label}",
-                            line = {'width' : 3}                            
-                        )
-                    )
-                # if st.session_state["flag_rc_approx"]:
-                #     fig.add_trace(
-                #         go.Scatter(
-                #             x=curves_and_approx.columns,
-                #             y=curves_and_approx.loc[f"r{label}"],
-                #             mode="lines",
-                #             name=f"r{label}",
-                #         )
-                #     )
-                if st.session_state["flag_nnlasso_approx"] and st.session_state['dd_flag']:
-                    fig.add_trace(
-                        go.Scatter(
-                            x=curves_and_approx.columns,
-                            y=curves_and_approx.loc[f"[DD]-{label}"],
-                            mode="lines",
-                            name=f"[DD]-{label}",
-                            line = {'width' : 3}
-                        )
-                    )
-                if not st.session_state['flag_other_dataset'] and st.session_state['cd_flag']:
-                    fig.add_trace(
-                        go.Scatter(
-                            x = curves_and_approx.columns,
-                            y = curves_and_approx.loc[f"[CD]-{label}"],
-                            mode="lines",
-                            name=f"[CD]-{label}",
-                            line = {'width' : 3}
-                        )
-                    )
+                fig.update_traces(
+                    hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
 
-            fig.update_xaxes(type="log", tickformat='.1f', dtick=1, showgrid=True)
-            fig.update_layout(
-                height=800,
-                width=1200,
-                showlegend=True,
-                legend = {'font':{'size' : 40}},
-                xaxis={'title': {'text': "grain size (micrometers, log-scale)", 'font': {'size': 35}}, 'tickfont' : {'size' : 20}}
-            )
-            fig.update_traces(
-                hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+                st.plotly_chart(fig)
+            else:
+                st.warning("**Please select labels to plot")
+    with col2:
+        st.info("Clic bellow to expand and export results")
+        with st.expander("Export results"):
+            st.markdown("<h5 style='text-align: center;'>Result exportation</h5>", unsafe_allow_html=True)
+            st.segmented_control("**What result to save ?**", options = ["Proportions of decomposition","Approximations"],default="Proportions of decomposition",key='result_type_export')
+            col1, col2 = st.columns(2)
+            if st.session_state['result_type_export'] == "Proportions of decomposition":
+                methods_options = ["Continuous Dictionnary","Discrete Dictionnairy","NMF"]
+            else :
+                methods_options = ['All'] 
+            
+            
+            with col1:
+                st.radio("**Which method ?**", options = methods_options,index = 0,key='method_result')
+                
+            if st.session_state['method_result'] == "Continuous Dictionnary" or st.session_state['method_result'] == "Discrete Dictionnairy":
+                export_extensions = [".json"]
+            else :
+                export_extensions = [".txt",".csv",".xlsx"]
 
-            st.plotly_chart(fig)
-        else:
-            st.warning("**Please select labels to plot")
+            with col2:
+                st.segmented_control("**Exportation format**",options = export_extensions,selection_mode="single",default=export_extensions[0],key='export_result_format')
+            
+            # Dictionnary to handle name of result file for each method
+            methods_name = {
+                "All" : 'all_methods',
+                "Continuous Dictionnary" : 'CD',
+                "Discrete Dictionnairy" : 'DD',
+                "NMF" : 'NMF'
+            }
+            
+            if st.button("Export result"):
+
+                if st.session_state['result_type_export'] == "Approximations":
+
+                    st.session_state['name_result_file'] = "Approx_granulo_analysis"
+                    if st.session_state['export_result_format'] == '.xlsx':
+                        st.session_state["X-X_hat-X_ref"].to_excel("exports/"+st.session_state['name_result_file']+'.xlsx',sheet_name='Feuil1',index=True)
+                    if st.session_state['export_result_format'] == '.csv':
+                        st.session_state["X-X_hat-X_ref"].to_csv("exports/"+st.session_state['name_result_file']+'.csv', float_format='%.4f', index=True)
+                    if st.session_state['export_result_format'] == '.txt':
+                        st.session_state["X-X_hat-X_ref"].to_csv("exports/"+st.session_state['name_result_file']+'.txt', float_format='%.4f', index=True)
+
+                else :
+                    st.session_state['name_result_file'] = "Proportion_"+methods_name[st.session_state['method_result']]+"_granulo_analysis"
+                    
+                    if st.session_state['export_result_format'] == ".json":
+                        if st.session_state['method_result'] == "Continuous Dictionnary":
+                            dict_export = st.session_state['blasso_Prop']
+                        else :
+                            dict_export = st.session_state['Prop_nn_lasso']
+
+                        with open("exports/"+st.session_state['name_result_file']+".json", "w") as json_file:
+                            json.dump(dict_export, json_file, indent=4)
+
+       
+                
+                st.success("Export file has been created")
+                #time.sleep(1)
+
+                
+
+                result_file_name = st.session_state['name_result_file'] + st.session_state['export_result_format']
+                if st.session_state['export_result_format'] == '.xlsx':
+                    st.download_button("📂 Download result file (.xlsx)", data=get_export_file(
+                        "exports/"+result_file_name), mime="application/octet-stream", file_name=result_file_name)
+                if st.session_state['export_result_format'] == '.csv':
+                    st.download_button("📂 Download result file (.csv)", data=get_export_file(
+                        "exports/"+result_file_name), mime="text", file_name=result_file_name)
+                if st.session_state['export_result_format'] == '.txt':
+                    st.download_button("📂 Download result file (.txt)", data=get_export_file(
+                        "exports/"+result_file_name), mime="text", file_name=result_file_name)
+                if st.session_state['export_result_format'] == '.json':
+                    st.download_button("📂 Download result file (.json)", data=get_export_file(
+                        "exports/"+result_file_name),mime="text", file_name=result_file_name)
+        
+
 
     
     if st.session_state['selected_obs_labels']:
