@@ -480,9 +480,9 @@ with tab_continous_dict:
                     "Skew gaussian 1 param ()",
                     "Skew gaussian 2 param (shape fixed)",
                 ],
-                key = 'Blasso_dict', index = 0)
+                key = 'Blasso_dict', index = 4)
         with col2:
-            st.selectbox("**Choose λ**", options = ['None','1e-5','1e-4','0.001','0.005','0.01','0.05','0.1','0.5','1','2','5','10'], key = 'Blasso_λ', index = 0)
+            st.selectbox("**Choose λ**", options = ['None','1e-5','1e-4','0.001','0.005','0.01','0.05','0.1','0.5','1','2','5','10'], key = 'Blasso_λ', index = 2)
                           
 
         if st.session_state['Blasso_λ'] != 'None':
@@ -538,11 +538,13 @@ with tab_continous_dict:
                 csv_name = res_first_name+"lambda_1e-5.csv"
                 json_name = prop_first_name+"lambda_1e-5.json"
 
-            # Importing approx
-            blasso_approx = pd.read_csv(import_directory+csv_name, index_col = 0)
-            with open(import_directory+json_name, 'r') as file:
-                st.session_state['blasso_Prop'] = json.load(file)
-
+            # Importing approx -> throw an exception if the file hasn't been computed 
+            try:
+                blasso_approx = pd.read_csv(import_directory+csv_name, index_col = 0)
+                with open(import_directory+json_name, 'r') as file:
+                    st.session_state['blasso_Prop'] = json.load(file)
+            except Exception as e:
+                st.error("⚠️⚠️⚠️ There is no results available for this λ with this dictionary. Select another dictionary or an other λ ⚠️⚠️⚠️")
     
             st.session_state['cd_flag'] = True
             for label, approx in blasso_approx.iterrows():
@@ -2128,6 +2130,10 @@ with tab_NMF:
 # endregion
 
 with tab_result:
+
+    # region plot
+
+
     st.markdown("<h1 style='text-align: center;'>Results</h1>", unsafe_allow_html=True)
     st.markdown("---")
     labels_obs = st.session_state["granulometrics"].index
@@ -2194,155 +2200,191 @@ with tab_result:
         )
 
     st.markdown("---")
-    col1, col2 = st.columns(2)
+    st.info("Clic bellow to expand and view plot")
+    with st.expander("**Plot**", icon ="📈",expanded = False):
+        if st.session_state['selected_obs_labels']:
 
-    with col1:
-        st.info("Clic bellow to expand and view plot")
-        with st.expander("**Plot**", icon ="📈",expanded = False):
-            if st.session_state['selected_obs_labels']:
-
-                curves_and_approx = st.session_state["X-X_hat-X_ref"]
-                fig = go.Figure()
-                for label in st.session_state["selected_obs_labels"]:
+            curves_and_approx = st.session_state["X-X_hat-X_ref"]
+            fig = go.Figure()
+            for label in st.session_state["selected_obs_labels"]:
+                fig.add_trace(
+                    go.Scatter(
+                        x=curves_and_approx.columns,
+                        y=curves_and_approx.loc[label],
+                        mode="lines",
+                        name=label,
+                        line = {'width' : 3}
+                    )
+                )
+                if st.session_state["flag_nmf_approx"] and st.session_state['nmf_flag']:
                     fig.add_trace(
                         go.Scatter(
                             x=curves_and_approx.columns,
-                            y=curves_and_approx.loc[label],
+                            y=curves_and_approx.loc[f"[NMF]-{label}"],
                             mode="lines",
-                            name=label,
+                            name=f"[NMF]-{label}",
+                            line = {'width' : 3}                            
+                        )
+                    )
+                # if st.session_state["flag_rc_approx"]:
+                #     fig.add_trace(
+                #         go.Scatter(
+                #             x=curves_and_approx.columns,
+                #             y=curves_and_approx.loc[f"r{label}"],
+                #             mode="lines",
+                #             name=f"r{label}",
+                #         )
+                #     )
+                if st.session_state["flag_nnlasso_approx"] and st.session_state['dd_flag']:
+                    fig.add_trace(
+                        go.Scatter(
+                            x=curves_and_approx.columns,
+                            y=curves_and_approx.loc[f"[DD]-{label}"],
+                            mode="lines",
+                            name=f"[DD]-{label}",
                             line = {'width' : 3}
                         )
                     )
-                    if st.session_state["flag_nmf_approx"] and st.session_state['nmf_flag']:
-                        fig.add_trace(
-                            go.Scatter(
-                                x=curves_and_approx.columns,
-                                y=curves_and_approx.loc[f"[NMF]-{label}"],
-                                mode="lines",
-                                name=f"[NMF]-{label}",
-                                line = {'width' : 3}                            
-                            )
+                if not st.session_state['flag_other_dataset'] and st.session_state['cd_flag']:
+                    fig.add_trace(
+                        go.Scatter(
+                            x = curves_and_approx.columns,
+                            y = curves_and_approx.loc[f"[CD]-{label}"],
+                            mode="lines",
+                            name=f"[CD]-{label}",
+                            line = {'width' : 3}
                         )
-                    # if st.session_state["flag_rc_approx"]:
-                    #     fig.add_trace(
-                    #         go.Scatter(
-                    #             x=curves_and_approx.columns,
-                    #             y=curves_and_approx.loc[f"r{label}"],
-                    #             mode="lines",
-                    #             name=f"r{label}",
-                    #         )
-                    #     )
-                    if st.session_state["flag_nnlasso_approx"] and st.session_state['dd_flag']:
-                        fig.add_trace(
-                            go.Scatter(
-                                x=curves_and_approx.columns,
-                                y=curves_and_approx.loc[f"[DD]-{label}"],
-                                mode="lines",
-                                name=f"[DD]-{label}",
-                                line = {'width' : 3}
+                    )
+
+            fig.update_xaxes(type="log", tickformat='.1f', dtick=1, showgrid=True)
+            fig.update_layout(
+                height=800,
+                width=1200,
+                showlegend=True,
+                legend = {'font':{'size' : 40}},
+                xaxis={'title': {'text': "grain size (micrometers, log-scale)", 'font': {'size': 35}}, 'tickfont' : {'size' : 20}}
+            )
+            fig.update_traces(
+                hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+
+            st.plotly_chart(fig)
+        else:
+            st.warning("**Please select labels to plot")
+    #endregion plot
+    
+    st.info("Clic bellow to expand and export results")
+    with st.expander("Export results"):
+        st.markdown("<h5 style='text-align: center;'>Result exportation</h5>", unsafe_allow_html=True)
+        st.segmented_control("**What result to save ?**", 
+                            options = ["Proportions of decomposition","Approximations","Quality of approximation"],
+                            default="Proportions of decomposition",key='result_type_export',
+                            help = "|-| **Proportions** : Dictionnary with prop of components (values) for each sample (key)         |-| "
+                                  +"**Approximations** : Tab with approximation's discretized curves of each sample         |-|"
+                                  +"**Quality of approximation** : Tab with errors metrics (norms) of each sample approximaton"
                             )
-                        )
-                    if not st.session_state['flag_other_dataset'] and st.session_state['cd_flag']:
-                        fig.add_trace(
-                            go.Scatter(
-                                x = curves_and_approx.columns,
-                                y = curves_and_approx.loc[f"[CD]-{label}"],
-                                mode="lines",
-                                name=f"[CD]-{label}",
-                                line = {'width' : 3}
-                            )
-                        )
-
-                fig.update_xaxes(type="log", tickformat='.1f', dtick=1, showgrid=True)
-                fig.update_layout(
-                    height=800,
-                    width=1200,
-                    showlegend=True,
-                    legend = {'font':{'size' : 40}},
-                    xaxis={'title': {'text': "grain size (micrometers, log-scale)", 'font': {'size': 35}}, 'tickfont' : {'size' : 20}}
-                )
-                fig.update_traces(
-                    hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
-
-                st.plotly_chart(fig)
-            else:
-                st.warning("**Please select labels to plot")
-    with col2:
-        st.info("Clic bellow to expand and export results")
-        with st.expander("Export results"):
-            st.markdown("<h5 style='text-align: center;'>Result exportation</h5>", unsafe_allow_html=True)
-            st.segmented_control("**What result to save ?**", options = ["Proportions of decomposition","Approximations"],default="Proportions of decomposition",key='result_type_export')
-            col1, col2 = st.columns(2)
-            if st.session_state['result_type_export'] == "Proportions of decomposition":
-                methods_options = ["Continuous Dictionnary","Discrete Dictionnairy","NMF"]
-            else :
-                methods_options = ['All'] 
-            
-            
-            with col1:
-                st.radio("**Which method ?**", options = methods_options,index = 0,key='method_result')
-                
-            if st.session_state['method_result'] == "Continuous Dictionnary" or st.session_state['method_result'] == "Discrete Dictionnairy":
-                export_extensions = [".json"]
-            else :
-                export_extensions = [".txt",".csv",".xlsx"]
-
-            with col2:
-                st.segmented_control("**Exportation format**",options = export_extensions,selection_mode="single",default=export_extensions[0],key='export_result_format')
-            
-            # Dictionnary to handle name of result file for each method
-            methods_name = {
-                "All" : 'all_methods',
-                "Continuous Dictionnary" : 'CD',
-                "Discrete Dictionnairy" : 'DD',
-                "NMF" : 'NMF'
-            }
-            
-            if st.button("Export result"):
-
-                if st.session_state['result_type_export'] == "Approximations":
-
-                    st.session_state['name_result_file'] = "Approx_granulo_analysis"
-                    if st.session_state['export_result_format'] == '.xlsx':
-                        st.session_state["X-X_hat-X_ref"].to_excel("exports/"+st.session_state['name_result_file']+'.xlsx',sheet_name='Feuil1',index=True)
-                    if st.session_state['export_result_format'] == '.csv':
-                        st.session_state["X-X_hat-X_ref"].to_csv("exports/"+st.session_state['name_result_file']+'.csv', float_format='%.4f', index=True)
-                    if st.session_state['export_result_format'] == '.txt':
-                        st.session_state["X-X_hat-X_ref"].to_csv("exports/"+st.session_state['name_result_file']+'.txt', float_format='%.4f', index=True)
-
-                else :
-                    st.session_state['name_result_file'] = "Proportion_"+methods_name[st.session_state['method_result']]+"_granulo_analysis"
-                    
-                    if st.session_state['export_result_format'] == ".json":
-                        if st.session_state['method_result'] == "Continuous Dictionnary":
-                            dict_export = st.session_state['blasso_Prop']
-                        else :
-                            dict_export = st.session_state['Prop_nn_lasso']
-
-                        with open("exports/"+st.session_state['name_result_file']+".json", "w") as json_file:
-                            json.dump(dict_export, json_file, indent=4)
-
-       
-                
-                st.success("Export file has been created")
-                #time.sleep(1)
-
-                
-
-                result_file_name = st.session_state['name_result_file'] + st.session_state['export_result_format']
-                if st.session_state['export_result_format'] == '.xlsx':
-                    st.download_button("📂 Download result file (.xlsx)", data=get_export_file(
-                        "exports/"+result_file_name), mime="application/octet-stream", file_name=result_file_name)
-                if st.session_state['export_result_format'] == '.csv':
-                    st.download_button("📂 Download result file (.csv)", data=get_export_file(
-                        "exports/"+result_file_name), mime="text", file_name=result_file_name)
-                if st.session_state['export_result_format'] == '.txt':
-                    st.download_button("📂 Download result file (.txt)", data=get_export_file(
-                        "exports/"+result_file_name), mime="text", file_name=result_file_name)
-                if st.session_state['export_result_format'] == '.json':
-                    st.download_button("📂 Download result file (.json)", data=get_export_file(
-                        "exports/"+result_file_name),mime="text", file_name=result_file_name)
+        col1, col2 = st.columns(2)
+        if st.session_state['result_type_export'] == "Proportions of decomposition" or st.session_state['result_type_export'] == "Quality of approximation":
+            methods_options = [
+                option for flag, option in [
+                    (st.session_state['cd_flag'], "Continuous Dictionnary"),
+                    (st.session_state['dd_flag'], "Discrete Dictionnary"),
+                    (st.session_state['nmf_flag'], "NMF")
+                ] if flag
+            ]
+        else :
+            methods_options = ['All'] 
         
+        
+        with col1:
+            st.radio("**Which method ?**", options = methods_options,index = 0,key='method_result')
+            
+        if st.session_state['result_type_export'] == "Proportions of decomposition" and (st.session_state['method_result'] == "Continuous Dictionnary" or st.session_state['method_result'] == "Discrete Dictionnairy"):
+            export_extensions = [".json"]
+        else :
+            export_extensions = [".txt",".csv",".xlsx"]
+
+        with col2:
+            st.segmented_control("**Exportation format**",options = export_extensions,selection_mode="single",default=export_extensions[0],key='export_result_format')
+        
+        # Dictionnary to handle name of result file for each method
+        methods_name = {
+            "All" : 'all_methods',
+            "Continuous Dictionnary" : 'CD',
+            "Discrete Dictionnairy" : 'DD',
+            "NMF" : 'NMF'
+        }
+        
+        if st.button("Export result"):
+
+            if st.session_state['result_type_export'] == "Approximations":
+
+                st.session_state['name_result_file'] = "Approx_granulo_analysis"
+                if st.session_state['export_result_format'] == '.xlsx':
+                    st.session_state["X-X_hat-X_ref"].to_excel("exports/"+st.session_state['name_result_file']+'.xlsx',sheet_name='Feuil1',index=True)
+                if st.session_state['export_result_format'] == '.csv':
+                    st.session_state["X-X_hat-X_ref"].to_csv("exports/"+st.session_state['name_result_file']+'.csv', float_format='%.4f', index=True)
+                if st.session_state['export_result_format'] == '.txt':
+                    st.session_state["X-X_hat-X_ref"].to_csv("exports/"+st.session_state['name_result_file']+'.txt', float_format='%.4f', index=True)
+
+            elif st.session_state['result_type_export'] == "Proportions of decomposition":
+                st.session_state['name_result_file'] = "Proportion_"+methods_name[st.session_state['method_result']]+"_granulo_analysis"
+                
+                if st.session_state['method_result'] == "Continuous Dictionnary":
+                    dict_export = st.session_state['blasso_Prop']
+                elif st.session_state['method_result'] == "Discrete Dictionnary":
+                    dict_export = st.session_state['Prop_nn_lasso']
+                else :
+                    dict_export = st.session_state['Prop_nmf']
+
+                with open("exports/"+st.session_state['name_result_file']+".json", "w") as json_file:
+                    json.dump(dict_export, json_file, indent=4)
+
+
+            else :
+                st.session_state['name_result_file'] = "Quality_approx_granulo_analysis"
+
+                # construction of a data frame that contains every quality measurement
+                qualities_approx = pd.DataFrame()
+                qualities_approx.index = st.session_state['granulometrics'].index
+
+                if st.session_state['method_result'] == "Continuous Dictionnary":
+                    qualities_approx = pd.concat([qualities_approx,st.session_state['cd_errors']], axis=1)
+                elif st.session_state['method_result'] == "Discrete Dictionnary":
+                    qualities_approx = pd.concat([qualities_approx,st.session_state['dd_errors']], axis=1)
+                else :
+                    qualities_approx = pd.concat([qualities_approx,st.session_state['nmf_errors']], axis=1)
+
+                # calculat average norms over all data
+                mean_unsorted = qualities_approx.mean()
+                mean_sorted = [mean_unsorted["l2 error"],mean_unsorted["nb components"],mean_unsorted["L1 relative error"]]
+                df_mean = pd.DataFrame([mean_sorted],columns= ["l2 error","nb components","L1 relative error"], index=["AVERAGE"])
+                qualities_approx = pd.concat([df_mean,qualities_approx])
+                
+                if st.session_state['export_result_format'] == '.xlsx':
+                    qualities_approx.to_excel("exports/"+st.session_state['name_result_file']+'.xlsx',sheet_name='Feuil1',index=True)
+                if st.session_state['export_result_format'] == '.csv':
+                    qualities_approx.to_csv("exports/"+st.session_state['name_result_file']+'.csv', float_format='%.4f', index=True)
+                if st.session_state['export_result_format'] == '.txt':
+                    qualities_approx.to_csv("exports/"+st.session_state['name_result_file']+'.txt', float_format='%.4f', index=True)
+               
+            
+            st.success("Export file has been created")
+            
+            # Display button to download export file  
+            result_file_name = st.session_state['name_result_file'] + st.session_state['export_result_format']
+            if st.session_state['export_result_format'] == '.xlsx':
+                st.download_button("📂 Download result file (.xlsx)", data=get_export_file(
+                    "exports/"+result_file_name), mime="application/octet-stream", file_name=result_file_name)
+            if st.session_state['export_result_format'] == '.csv':
+                st.download_button("📂 Download result file (.csv)", data=get_export_file(
+                    "exports/"+result_file_name), mime="text", file_name=result_file_name)
+            if st.session_state['export_result_format'] == '.txt':
+                st.download_button("📂 Download result file (.txt)", data=get_export_file(
+                    "exports/"+result_file_name), mime="text", file_name=result_file_name)
+            if st.session_state['export_result_format'] == '.json':
+                st.download_button("📂 Download result file (.json)", data=get_export_file(
+                    "exports/"+result_file_name),mime="text", file_name=result_file_name)
+    
 
 
     
