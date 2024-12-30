@@ -1,3 +1,22 @@
+"""
+%> Web application Granulometric (grain-size) data analysis during an IRMAR internship <% 
+
+Author :
+Jean Pousset (4th year Applied Maths INSA Rennes)  contact : pousset.jean1@gmail.com 
+
+Internship report : https://raw.githubusercontent.com/JeanPousset/granulometric-analysis/main/IRMAR_report/Rapport_IRMAR_d%C3%A9composition_courbe_granulom%C3%A9triques_Jean_POUSSET.pdf
+
+Guidance:
+- Valérie Monbet (IRMAR) https://perso.univ-rennes1.fr/valerie.monbet/
+- Fabrice Mahé (IRMAR) https://perso.univ-rennes1.fr/fabrice.mahe/
+
+Data proveiders :
+- François Pustoc'h (CreAAH)
+- Simond Puaud (CreAAH) https://creaah.cnrs.fr/team/puaud-simon-1/ 
+
+Code writer of the BLASSO results : Clément Elvira (IETR / SCEE) https://c-elvira.github.io/
+"""
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -9,22 +28,21 @@ import plotly.graph_objects as go
 from functools import partial
 import subprocess
 import re
-
-
-# from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm
 from plotly.subplots import make_subplots
 import sys
+# from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm (commented because we don't use this technique anymore)
 
+
+
+
+# Streamlit and environemetn managment
 sys.path.append("..")
-
 st.set_page_config(page_title="jpousset : granulometric analysis", layout="wide")
-
-
 st.title("Component identification on granulometric data")
 
 # removing old export file
 if  'clean_exports_flag' not in st.session_state:
-    subprocess.run(f"rm -f exports/*", shell=True, check=True)
+    subprocess.run("rm -f exports/*", shell=True, check=True)
     st.session_state['clean_exports_flag'] = True
 
 
@@ -94,7 +112,6 @@ if "X-X_hat-X_ref" not in st.session_state:
 # endregion
 
 # Loading reference curves
-
 if "ref_curves" not in st.session_state:
     st.session_state["ref_curves"] = {}  # empty initialization
     st.session_state["ref_curves"]["ref_ArgilesFines"] = np.genfromtxt(
@@ -188,29 +205,72 @@ materials = {
 }
 # endregion
 
-
-tab_intro, tab_continous_dict, tab_discrete_dict, tab_NMF, tab_result = st.tabs(
+# declaration of the web app tabs
+tab_intro, tab_data, tab_continous_dict, tab_discrete_dict, tab_NMF, tab_result = st.tabs(
     [
         "**Introduction**",
+        "**Data Managment**",
         "**Continuous dictionary**",
-        "**Discrete dictionnary**",
+        "**Discrete dictionary**",
         "**Unsupervised**",
         "**Results**",
-    ]
-)
+    ])
 
+# 1st tab : explain the purpose of this app
 with tab_intro:
     col01, col02, col03 = st.columns([1, 3, 1])
     with col02:
-        st.markdown("<h2 style='text-align: center;'>Presentation of our granulometric data</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center;'>Granulometric (grain-size) data</h2>", unsafe_allow_html=True)
 
-        st.write("*[ToDo] : add little explication of our data + plot of few curve and illustration of components*")
-        with st.expander("**View data set**"):
-            st.dataframe(st.session_state['granulometrics'])
+        st.write("""In a sample of raw earth we can find several types of components. These take the form of a 
+                    more or less recognizable peak in a distribution curve. These components are classified 
+                    according to the interval (abscissa) in which the peak is located :""")
 
-        st.markdown("----")
-        st.markdown("<h4 style='text-align: center;'>Reference curves of the sample components</h4>", unsafe_allow_html=True)
+        st.image("ref_curves/comt_inter.png")
+        st.write("""The component with a peak between 20 and 50 microns (µm) 
+                    is of the Coarse Alteration Silt or Loess type. Coarse silts are the result of the separation 
+                    of various granular materials with larger grain sizes. Loess, on the other hand, is formed by 
+                    dust deposits (silts) transported by the wind. This eolian origin makes the peak associated 
+                    with loess more constricted than that of coarse silt. In fact, only grains of the same size 
+                    will be transported to the sample location. Smaller (or larger) grains will be carried further 
+                    (or closer) by the wind.""")
+        st.write("""The difference between the two types lies in the origin of the silt (one by weathering, the 
+                    other by eolian transport). The general designations are Limons grossiers d'altération and 
+                    Limons grossier de Loess. In our study, we will simplify these terms to Limons grossiers and 
+                    Loess.""")
+        st.markdown("<h2 style='text-align: center;'>Purpose of this web-app</h2>", unsafe_allow_html=True)
+
+        st.write("""The first objective is to break down the observed curves into linear combinations of unimodal 
+                    (single-peak) curves, which will be assigned to a component according to the peak's location 
+                    on the x-axis. This enables geologists to determine the components (and their proportions) 
+                    in each sample.""")
+
+        st.write("""A second objective is to discriminate between the two components with peaks between 20 and 50 
+                    µm: Coarse Silts and Loess. The supersposition of the peak intervals for these two components 
+                    complicates the analysis of the curves by geologists. We therefore need to establish rules and 
+                    criteria for discriminating between Loess and coarse silt peaks.""")
+        st.markdown("<h2 style='text-align: center;'>Web app presentation </h2>", unsafe_allow_html=True)
+
+
+ 
+
+        st.markdown("""
+        - ***Introduction*** :  explain the global purpose of the application
+        - ***Data managment*** :  Allows you to add, remove or reset some granulometric sample but also reset the dataset.
+        - ***Continuous dictionary, Discrete dictionary, Unsupervized*** :   These 3 tabs are dedicated to different methods 
+                        / algorithms that you can use with several parameter values to decompose sample into uni-modal curves.
+        - ***Results*** : Allows you to plot every sample with the approximations of the various methods. It also summarizes 
+                            proportion of decompositions, approximation error metrics (various norm) and others statistics.
+                            In the end you can also export your results in various file extensions.""")
         
+        st.markdown("----")
+        st.markdown("<h4 style='text-align: center;'>A bit of context : reference curves</h4>", unsafe_allow_html=True)
+
+        st.write("""In a previous work, reference curves were constructed, representative of each component sought. We show 
+                    them here to give you an idea of what we are looking for. If you want to see an example of granulometric sample 
+                    you can easily plot some in the **Results** tab.""")
+
+
         # region ref curves plot
         fig = go.Figure()
         fig.add_trace(
@@ -223,9 +283,16 @@ with tab_intro:
         )
         fig.update_xaxes(type="log", tickformat=".1f", dtick=1, showgrid=True)
         fig.update_layout(
-            height=500,
+            height=700,
             showlegend=True,
-            legend = {'font':{'size' : 20}},
+            legend={
+        'font': {'size': 20},
+        'orientation': "h",  
+        'yanchor': "bottom", 
+        'y': 1.02,           
+        'xanchor': "center",  
+        'x': 0.5             
+    },
             xaxis={'title': {'text': "grain size (micrometers, log-scale)", 'font': {'size': 20}}}
         )
         fig.update_traces(
@@ -282,74 +349,71 @@ with tab_intro:
         st.plotly_chart(fig)
         # endregion
         
-        # region data_management
+with tab_data:
+
+        st.markdown("<h3 style='text-align: center;'>Add new observation</h3>", unsafe_allow_html=True)
+        with st.form(key='input_obs_form'):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.radio("**Separator**",
+                            options=['**⇥**', '**␣**', '**,**', '**;**'],
+                            captions=['tabulation', 'space',
+                                    'comma', 'semicolon'],
+                            index=0,
+                            key=st.session_state['sep_input'])
+            with col2:
+                st.radio("**Decimal**",
+                            options=['**,**', '**.**'],
+                            captions=['comma', 'dot'],
+                            index=0,
+                            key=st.session_state['dec_input'])
+            # Utiliser un textarea pour plus de commodité
+            input_data = st.text_area(
+                'Raw data (with metadata), separated by tabulations :', height=150)
+
+            col1, col2 = st.columns([9, 1])
+            with col2:
+                submit_button = st.form_submit_button(label='Add')
+
+            if submit_button:
+                # dict to translate sep option into ASCII symbol
+                sep_dict = {
+                    'tabulation': '\t',
+                    'space': ' ',
+                    'comma': ',',
+                    'semicolon': ';'
+                }
+                dec_dict = {
+                    'comma': ',',
+                    'dot': '.'
+                }
+                df_input = pd.DataFrame(
+                    columns=st.session_state['raw_data'].columns)
+                lines = input_data.strip().split('\n')
+
+                for line in lines:
+                    row = line.split(
+                        sep_dict[st.session_state['sep_input']])
+                    row[4:] = [float(val.replace(dec_dict[st.session_state['dec_input']], '.'))
+                                # convert data point into float
+                                for val in row[4:]]
+                    # adding the line (copy maybe useless)
+                    df_input.loc[len(df_input)] = row.copy()
+
+                st.session_state['raw_data'] = pd.concat(
+                    [st.session_state['raw_data'], df_input])
+                st.dataframe(st.session_state['raw_data'])
+                st.session_state['raw_data'].to_excel(
+                    "data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
+                st.success(
+                    'Data loaded, please reload the page to save changes')
 
         st.markdown("---")
-        st.header("Data management")
+        col01, col02, col03 = st.columns([1, 3, 1])
+        with col02:
+            st.markdown("<h3 style='text-align: center;'>Remove observation(s)</h3>", unsafe_allow_html=True)
 
-        with st.expander("Add, remove, export or reset data"):
-
-            st.subheader("Add new observation")
-
-            with st.form(key='input_obs_form'):
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.radio("**Separator**",
-                             options=['**⇥**', '**␣**', '**,**', '**;**'],
-                             captions=['tabulation', 'space',
-                                       'comma', 'semicolon'],
-                             index=0,
-                             key=st.session_state['sep_input'])
-                with col2:
-                    st.radio("**Decimal**",
-                             options=['**,**', '**.**'],
-                             captions=['comma', 'dot'],
-                             index=0,
-                             key=st.session_state['dec_input'])
-                # Utiliser un textarea pour plus de commodité
-                input_data = st.text_area(
-                    'Raw data (with metadata), separated by tabulations :', height=150)
-
-                col1, col2 = st.columns([9, 1])
-                with col2:
-                    submit_button = st.form_submit_button(label='Add')
-
-                st.write(st.session_state['dec_input'])
-
-                if submit_button:
-                    # dict to translate sep option into ASCII symbol
-                    sep_dict = {
-                        'tabulation': '\t',
-                        'space': ' ',
-                        'comma': ',',
-                        'semicolon': ';'
-                    }
-                    dec_dict = {
-                        'comma': ',',
-                        'dot': '.'
-                    }
-                    df_input = pd.DataFrame(
-                        columns=st.session_state['raw_data'].columns)
-                    lines = input_data.strip().split('\n')
-
-                    for line in lines:
-                        row = line.split(
-                            sep_dict[st.session_state['sep_input']])
-                        row[4:] = [float(val.replace(dec_dict[st.session_state['dec_input']], '.'))
-                                   # convert data point into float
-                                   for val in row[4:]]
-                        # adding the line (copy maybe useless)
-                        df_input.loc[len(df_input)] = row.copy()
-
-                    st.session_state['raw_data'] = pd.concat(
-                        [st.session_state['raw_data'], df_input])
-                    st.dataframe(st.session_state['raw_data'])
-                    st.session_state['raw_data'].to_excel(
-                        "data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
-                    st.success(
-                        'Data loaded, please reload the page to save changes')
-
-            st.subheader("Remove observation")
+            st.subheader("")
             st.markdown(
                 "Choose which label to remove and then click on \"Confirm\". Please reload the page to save change !")
             col1, col2 = st.columns(2)
@@ -369,26 +433,27 @@ with tab_intro:
                     st.success("Removing asked, now reload the page")
                     st.dataframe(st.session_state['raw_data'])
 
-            st.subheader("Data exportation")
+            st.markdown("---")
+            st.markdown("<h3 style='text-align: center;'>Data exportation</h3>", unsafe_allow_html=True)
             st.toggle("Export all", value=True, key='flag_output_all')
             with st.form(key='output_obs_form'):
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.text_input("Enter file name *(without extension)*",
-                                  key='output_file_name', value="granulometric_data")
+                                    key='output_file_name', value="granulometric_data")
                 with col2:
                     st.radio("File format", options=["**Excel (.xlsx)**", "CSV (.csv)"], key='output_ext',
-                             help="In .xlsx, float decimal is comma **,** . In .csv, float decimal is dot **.**")
+                                help="In .xlsx, float decimal is comma **,** . In .csv, float decimal is dot **.**")
                 with col3:
                     st.radio("data format", options=["**Cumulative**", "**Distributive**"], key='output_data_format',
-                             help="Shape of observation curves : cumulative (raw) or disrtibutive (transformation)")
+                                help="Shape of observation curves : cumulative (raw) or disrtibutive (transformation)")
 
                 # case with only few obs
                 if not st.session_state['flag_output_all']:
                     st.multiselect("Select observation to export :",
-                                   options=st.session_state['granulometrics'].index, key='output_labels')
+                                    options=st.session_state['granulometrics'].index, key='output_labels')
 
-                col1, col2 = st.columns([8, 1])
+                col1, col2 = st.columns([6, 1])
                 with col2:
                     submit_button_export = st.form_submit_button(
                         label='Export')
@@ -443,12 +508,13 @@ with tab_intro:
                     st.download_button("Download export file (.csv)", data=get_export_file(
                         "exports/"+export_file_name), mime="text/csv", file_name=export_file_name)
 
-            st.subheader("**:red[Database reset]**")
+            st.markdown("---")
+            st.markdown("<h3 style='text-align: center; color: red'>Dataset reset</h3>", unsafe_allow_html=True)
             st.markdown("""This button allows you to reset granulometrics data to the original 
                     in case of error when updating data. """)
             st.warning(
-                "Are you sure ? You will not be able to retrieve changes made to the database")
-            col1, col2 = st.columns([4.6, 1])
+                "⚠️ Are you sure ? You will not be able to retrieve changes made to the database ⚠️")
+            col1, col2 = st.columns([3, 1])
             with col2:
                 if st.button("Confirm reset"):
                     df_save = pd.read_excel(
@@ -458,7 +524,7 @@ with tab_intro:
                     st.success(
                         "Database reset made, please reload the page to apply changes.")
 
-        # endregion
+                    # endregion
 
 
 with tab_continous_dict:
