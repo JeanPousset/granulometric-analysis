@@ -421,8 +421,7 @@ with tab_data:
         col1, col2 = st.columns(2)
 
         with col1:
-            st.multiselect(
-                "", options=st.session_state["granulometrics"].index, key="labels_to_remove", label_visibility='collapsed')
+            st.multiselect(" ", options=st.session_state["granulometrics"].index, key="labels_to_remove", label_visibility='collapsed')
 
         with col2:
             if st.button("Confirm"):
