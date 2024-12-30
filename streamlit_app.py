@@ -3,6 +3,7 @@
 
 Author :
 Jean Pousset (4th year Applied Maths INSA Rennes)  contact : pousset.jean1@gmail.com 
+DON'T HESITATE TO CONTACT ME FOR HELP / MORE EXPLANATIONS
 
 Internship report : https://raw.githubusercontent.com/JeanPousset/granulometric-analysis/main/IRMAR_report/Rapport_IRMAR_d%C3%A9composition_courbe_granulom%C3%A9triques_Jean_POUSSET.pdf
 
@@ -49,7 +50,7 @@ if  'clean_exports_flag' not in st.session_state:
 # Loading observation data :
 if "granulometrics" not in st.session_state:
     data = pd.read_excel(
-        "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, index_col=2, engine='openpyxl'
+        "Data/data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, index_col=2, engine='openpyxl'
     )
     # Deletion of additional information
     data = data.drop(columns=["Dept", "Commune", "Type"])
@@ -67,7 +68,7 @@ if "granulometrics" not in st.session_state:
     st.session_state["granulometrics"] = data        # dataframe to use
     # dataframe to update the excel file (adding or removing observations)
     st.session_state["raw_data"] = pd.read_excel(
-        "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, engine='openpyxl')
+        "Data/data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, engine='openpyxl')
 
 # region initialisation of session variables
 if 'result_exporation_available' not in st.session_state:
@@ -115,28 +116,28 @@ if "X-X_hat-X_ref" not in st.session_state:
 if "ref_curves" not in st.session_state:
     st.session_state["ref_curves"] = {}  # empty initialization
     st.session_state["ref_curves"]["ref_ArgilesFines"] = np.genfromtxt(
-        "ref_curves/ref_ArgilesFines.csv", delimiter=","
+        "ref_curves_&_exemples/ref_ArgilesFines.csv", delimiter=","
     )
     st.session_state["ref_curves"]["ref_ArgilesClassiques"] = np.genfromtxt(
-        "ref_curves/ref_ArgilesClassiques.csv", delimiter=","
+        "ref_curves_&_exemples/ref_ArgilesClassiques.csv", delimiter=","
     )
     st.session_state["ref_curves"]["ref_Alterites"] = np.genfromtxt(
-        "ref_curves/ref_Alterites.csv", delimiter=","
+        "ref_curves_&_exemples/ref_Alterites.csv", delimiter=","
     )
     st.session_state["ref_curves"]["ref_SablesFins"] = np.genfromtxt(
-        "ref_curves/ref_SablesFins.csv", delimiter=","
+        "ref_curves_&_exemples/ref_SablesFins.csv", delimiter=","
     )
     st.session_state["ref_curves"]["ref_SablesGrossiers"] = np.genfromtxt(
-        "ref_curves/ref_SablesGrossiers.csv", delimiter=","
+        "ref_curves_&_exemples/ref_SablesGrossiers.csv", delimiter=","
     )
     st.session_state["ref_curves"]["ref_Loess"] = np.genfromtxt(
-        "ref_curves/ref_Loess.csv", delimiter=","
+        "ref_curves_&_exemples/ref_Loess.csv", delimiter=","
     )
     st.session_state["ref_curves"]["ref_LimonsGrossiers"] = np.genfromtxt(
-        "ref_curves/ref_LimonsGrossiers.csv", delimiter=","
+        "ref_curves_&_exemples/ref_LimonsGrossiers.csv", delimiter=","
     )
     st.session_state["ref_curves"]["ref_Loess_without_residules"] = np.genfromtxt(
-        "ref_curves/ref_LimonsGrossiersLoess.csv", delimiter=","
+        "ref_curves_&_exemples/ref_LimonsGrossiersLoess.csv", delimiter=","
     )
     st.session_state["scaled_ref_curves"] = (
         {}
@@ -226,7 +227,7 @@ with tab_intro:
                     more or less recognizable peak in a distribution curve. These components are classified 
                     according to the interval (abscissa) in which the peak is located :""")
 
-        st.image("ref_curves/comt_inter.png")
+        st.image("ref_curves_&_exemples/comt_inter.png")
         st.write("""The component with a peak between 20 and 50 microns (µm) 
                     is of the Coarse Alteration Silt or Loess type. Coarse silts are the result of the separation 
                     of various granular materials with larger grain sizes. Loess, on the other hand, is formed by 
@@ -348,183 +349,182 @@ with tab_intro:
         )
         st.plotly_chart(fig)
         # endregion
-        
+
+
 with tab_data:
 
-        st.markdown("<h3 style='text-align: center;'>Add new observation</h3>", unsafe_allow_html=True)
-        with st.form(key='input_obs_form'):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.radio("**Separator**",
-                            options=['**⇥**', '**␣**', '**,**', '**;**'],
-                            captions=['tabulation', 'space',
-                                    'comma', 'semicolon'],
-                            index=0,
-                            key=st.session_state['sep_input'])
-            with col2:
-                st.radio("**Decimal**",
-                            options=['**,**', '**.**'],
-                            captions=['comma', 'dot'],
-                            index=0,
-                            key=st.session_state['dec_input'])
-            # Utiliser un textarea pour plus de commodité
-            input_data = st.text_area(
-                'Raw data (with metadata), separated by tabulations :', height=150)
+    st.markdown("<h3 style='text-align: center;'>Add new observation</h3>", unsafe_allow_html=True)
+    with st.form(key='input_obs_form'):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.radio("**Separator**",
+                        options=['**⇥**', '**␣**', '**,**', '**;**'],
+                        captions=['tabulation', 'space',
+                                'comma', 'semicolon'],
+                        index=0,
+                        key=st.session_state['sep_input'])
+        with col2:
+            st.radio("**Decimal**",
+                        options=['**,**', '**.**'],
+                        captions=['comma', 'dot'],
+                        index=0,
+                        key=st.session_state['dec_input'])
+        # Utiliser un textarea pour plus de commodité
+        input_data = st.text_area(
+            'Raw data (with metadata), separated by tabulations :', height=150)
 
-            col1, col2 = st.columns([9, 1])
-            with col2:
-                submit_button = st.form_submit_button(label='Add')
+        col1, col2 = st.columns([9, 1])
+        with col2:
+            submit_button = st.form_submit_button(label='Add')
 
-            if submit_button:
-                # dict to translate sep option into ASCII symbol
-                sep_dict = {
-                    'tabulation': '\t',
-                    'space': ' ',
-                    'comma': ',',
-                    'semicolon': ';'
-                }
-                dec_dict = {
-                    'comma': ',',
-                    'dot': '.'
-                }
-                df_input = pd.DataFrame(
-                    columns=st.session_state['raw_data'].columns)
-                lines = input_data.strip().split('\n')
+        if submit_button:
+            # dict to translate sep option into ASCII symbol
+            sep_dict = {
+                'tabulation': '\t',
+                'space': ' ',
+                'comma': ',',
+                'semicolon': ';'
+            }
+            dec_dict = {
+                'comma': ',',
+                'dot': '.'
+            }
+            df_input = pd.DataFrame(
+                columns=st.session_state['raw_data'].columns)
+            lines = input_data.strip().split('\n')
 
-                for line in lines:
-                    row = line.split(
-                        sep_dict[st.session_state['sep_input']])
-                    row[4:] = [float(val.replace(dec_dict[st.session_state['dec_input']], '.'))
-                                # convert data point into float
-                                for val in row[4:]]
-                    # adding the line (copy maybe useless)
-                    df_input.loc[len(df_input)] = row.copy()
+            for line in lines:
+                row = line.split(
+                    sep_dict[st.session_state['sep_input']])
+                row[4:] = [float(val.replace(dec_dict[st.session_state['dec_input']], '.'))
+                            # convert data point into float
+                            for val in row[4:]]
+                # adding the line (copy maybe useless)
+                df_input.loc[len(df_input)] = row.copy()
 
-                st.session_state['raw_data'] = pd.concat(
-                    [st.session_state['raw_data'], df_input])
-                st.dataframe(st.session_state['raw_data'])
+            st.session_state['raw_data'] = pd.concat(
+                [st.session_state['raw_data'], df_input])
+            st.dataframe(st.session_state['raw_data'])
+            st.session_state['raw_data'].to_excel(
+                "Data/data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
+            st.success(
+                'Data loaded, please reload the page to save changes')
+
+    st.markdown("---")
+    col01, col02, col03 = st.columns([1, 3, 1])
+    with col02:
+        st.markdown("<h3 style='text-align: center;'>Remove observation(s)</h3>", unsafe_allow_html=True)
+
+        st.subheader("")
+        st.markdown(
+            "Choose which label to remove and then click on \"Confirm\". Please reload the page to save change !")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.multiselect(
+                "", options=st.session_state["granulometrics"].index, key="labels_to_remove", label_visibility='collapsed')
+
+        with col2:
+            if st.button("Confirm"):
+                # Select observation execpt those to be removed
+                st.session_state['raw_data'] = st.session_state['raw_data'][~st.session_state['raw_data']['Echt'].isin(
+                    st.session_state['labels_to_remove'])]
+                # Update the excel file
                 st.session_state['raw_data'].to_excel(
-                    "data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
-                st.success(
-                    'Data loaded, please reload the page to save changes')
+                    "Data/data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
+                st.success("Removing asked, now reload the page")
+                st.dataframe(st.session_state['raw_data'])
 
         st.markdown("---")
-        col01, col02, col03 = st.columns([1, 3, 1])
-        with col02:
-            st.markdown("<h3 style='text-align: center;'>Remove observation(s)</h3>", unsafe_allow_html=True)
-
-            st.subheader("")
-            st.markdown(
-                "Choose which label to remove and then click on \"Confirm\". Please reload the page to save change !")
-            col1, col2 = st.columns(2)
-
+        st.markdown("<h3 style='text-align: center;'>Data exportation</h3>", unsafe_allow_html=True)
+        st.toggle("Export all", value=True, key='flag_output_all')
+        with st.form(key='output_obs_form'):
+            col1, col2, col3 = st.columns(3)
             with col1:
-                st.multiselect(
-                    "", options=st.session_state["granulometrics"].index, key="labels_to_remove", label_visibility='collapsed')
-
+                st.text_input("Enter file name *(without extension)*",
+                                key='output_file_name', value="granulometric_data")
             with col2:
-                if st.button("Confirm"):
-                    # Select observation execpt those to be removed
-                    st.session_state['raw_data'] = st.session_state['raw_data'][~st.session_state['raw_data']['Echt'].isin(
-                        st.session_state['labels_to_remove'])]
-                    # Update the excel file
-                    st.session_state['raw_data'].to_excel(
-                        "data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
-                    st.success("Removing asked, now reload the page")
-                    st.dataframe(st.session_state['raw_data'])
+                st.radio("File format", options=["**Excel (.xlsx)**", "CSV (.csv)"], key='output_ext',
+                            help="In .xlsx, float decimal is comma **,** . In .csv, float decimal is dot **.**")
+            with col3:
+                st.radio("data format", options=["**Cumulative**", "**Distributive**"], key='output_data_format',
+                            help="Shape of observation curves : cumulative (raw) or disrtibutive (transformation)")
 
-            st.markdown("---")
-            st.markdown("<h3 style='text-align: center;'>Data exportation</h3>", unsafe_allow_html=True)
-            st.toggle("Export all", value=True, key='flag_output_all')
-            with st.form(key='output_obs_form'):
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.text_input("Enter file name *(without extension)*",
-                                    key='output_file_name', value="granulometric_data")
-                with col2:
-                    st.radio("File format", options=["**Excel (.xlsx)**", "CSV (.csv)"], key='output_ext',
-                                help="In .xlsx, float decimal is comma **,** . In .csv, float decimal is dot **.**")
-                with col3:
-                    st.radio("data format", options=["**Cumulative**", "**Distributive**"], key='output_data_format',
-                                help="Shape of observation curves : cumulative (raw) or disrtibutive (transformation)")
+            # case with only few obs
+            if not st.session_state['flag_output_all']:
+                st.multiselect("Select observation to export :",
+                                options=st.session_state['granulometrics'].index, key='output_labels')
 
-                # case with only few obs
-                if not st.session_state['flag_output_all']:
-                    st.multiselect("Select observation to export :",
-                                    options=st.session_state['granulometrics'].index, key='output_labels')
+            col1, col2 = st.columns([6, 1])
+            with col2:
+                submit_button_export = st.form_submit_button(
+                    label='Export')
 
-                col1, col2 = st.columns([6, 1])
-                with col2:
-                    submit_button_export = st.form_submit_button(
-                        label='Export')
+            if submit_button_export:
 
-                if submit_button_export:
+                if st.session_state['output_data_format'] == "**Cumulative**":
+                    # cumulative output
+                    df_export = pd.read_excel(
+                        "Data/data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, index_col=2, engine='openpyxl')
+                else:  # distributive (transformation)
+                    df_export = st.session_state['granulometrics']
 
-                    if st.session_state['output_data_format'] == "**Cumulative**":
-                        # cumulative output
-                        df_export = pd.read_excel(
-                            "data_granulometry_03_06_24.xlsx", sheet_name=0, header=0, index_col=2, engine='openpyxl')
-                    else:  # distributive (transformation)
-                        df_export = st.session_state['granulometrics']
-
-                    # export all
-                    if st.session_state['flag_output_all']:
-                        if st.session_state['output_ext'] == "**Excel (.xlsx)**":
-                            df_export.to_excel(
-                                "exports/"+st.session_state['output_file_name']+'.xlsx', sheet_name='Feuil1', index=False)
-                        else:
-                            df_export.to_csv(
-                                "exports/"+st.session_state['output_file_name']+'.csv', float_format='%.4f', index=False)
-                    # case with only few label
-                    else:
-                        if st.session_state['output_ext'] == "**Excel (.xlsx)**":
-                            df_export.loc[st.session_state['output_labels']].to_excel(
-                                "exports/"+st.session_state['output_file_name']+'.xlsx', sheet_name='Feuil1', index=False)
-                        else:
-                            df_export.loc[st.session_state['output_labels']].to_csv(
-                                "exports/"+st.session_state['output_file_name']+'.csv', float_format='%.4f', index=False)
-
-                    # session variable to handle download button next
-                    st.session_state['export_available_flag'] = True
-                    st.session_state['name_export_file'] = st.session_state['output_file_name']
+                # export all
+                if st.session_state['flag_output_all']:
                     if st.session_state['output_ext'] == "**Excel (.xlsx)**":
-                        st.session_state['export_file_ext'] = '.xlsx'
+                        df_export.to_excel(
+                            "exports/"+st.session_state['output_file_name']+'.xlsx', sheet_name='Feuil1', index=False)
                     else:
-                        st.session_state['export_file_ext'] = '.csv'
-
-                    st.success("Export file created")
-
-            def get_export_file(file_name):
-                with open(file_name, "rb") as file:
-                    return file.read()
-
-            if st.session_state['export_available_flag'] == True:
-                export_file_name = st.session_state['name_export_file'] + \
-                    st.session_state['export_file_ext']
-                if st.session_state['export_file_ext'] == '.xlsx':
-                    st.download_button("Download export file (.xlsx)", data=get_export_file(
-                        "exports/"+export_file_name), mime="application/octet-stream", file_name=export_file_name)
+                        df_export.to_csv(
+                            "exports/"+st.session_state['output_file_name']+'.csv', float_format='%.4f', index=False)
+                # case with only few label
                 else:
-                    st.download_button("Download export file (.csv)", data=get_export_file(
-                        "exports/"+export_file_name), mime="text/csv", file_name=export_file_name)
+                    if st.session_state['output_ext'] == "**Excel (.xlsx)**":
+                        df_export.loc[st.session_state['output_labels']].to_excel(
+                            "exports/"+st.session_state['output_file_name']+'.xlsx', sheet_name='Feuil1', index=False)
+                    else:
+                        df_export.loc[st.session_state['output_labels']].to_csv(
+                            "exports/"+st.session_state['output_file_name']+'.csv', float_format='%.4f', index=False)
 
-            st.markdown("---")
-            st.markdown("<h3 style='text-align: center; color: red'>Dataset reset</h3>", unsafe_allow_html=True)
-            st.markdown("""This button allows you to reset granulometrics data to the original 
-                    in case of error when updating data. """)
-            st.warning(
-                "⚠️ Are you sure ? You will not be able to retrieve changes made to the database ⚠️")
-            col1, col2 = st.columns([3, 1])
-            with col2:
-                if st.button("Confirm reset"):
-                    df_save = pd.read_excel(
-                        "data_save_for_reset.xlsx", sheet_name=0, header=0, engine='openpyxl')
-                    df_save.to_excel(
-                        "data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
-                    st.success(
-                        "Database reset made, please reload the page to apply changes.")
+                # session variable to handle download button next
+                st.session_state['export_available_flag'] = True
+                st.session_state['name_export_file'] = st.session_state['output_file_name']
+                if st.session_state['output_ext'] == "**Excel (.xlsx)**":
+                    st.session_state['export_file_ext'] = '.xlsx'
+                else:
+                    st.session_state['export_file_ext'] = '.csv'
 
-                    # endregion
+                st.success("Export file created")
+
+        def get_export_file(file_name):
+            with open(file_name, "rb") as file:
+                return file.read()
+
+        if st.session_state['export_available_flag'] == True:
+            export_file_name = st.session_state['name_export_file'] + \
+                st.session_state['export_file_ext']
+            if st.session_state['export_file_ext'] == '.xlsx':
+                st.download_button("Download export file (.xlsx)", data=get_export_file(
+                    "exports/"+export_file_name), mime="application/octet-stream", file_name=export_file_name)
+            else:
+                st.download_button("Download export file (.csv)", data=get_export_file(
+                    "exports/"+export_file_name), mime="text/csv", file_name=export_file_name)
+
+        st.markdown("---")
+        st.markdown("<h3 style='text-align: center; color: red'>Dataset reset</h3>", unsafe_allow_html=True)
+        st.markdown("""This button allows you to reset granulometrics data to the original 
+                in case of error when updating data. """)
+        st.warning(
+            "⚠️ Are you sure ? You will not be able to retrieve changes made to the database ⚠️")
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("Confirm reset"):
+                df_save = pd.read_excel(
+                    "Data/data_save_for_reset.xlsx", sheet_name=0, header=0, engine='openpyxl')
+                df_save.to_excel(
+                    "Data/data_granulometry_03_06_24.xlsx", sheet_name='Feuil1', index=False)
+                st.success(
+                    "Database reset made, please reload the page to apply changes.")
 
 
 with tab_continous_dict:
@@ -653,7 +653,7 @@ with tab_continous_dict:
 
         if not st.session_state["flag_comparaison_curves_importation"]:
 
-            with open("ex_continuous_adv.json", "r") as file:
+            with open("ref_curves_&_exemples/ex_continuous_adv.json", "r") as file:
                 json_data = json.load(file)
 
             st.session_state["comp_t"] = json_data["abscisses"]
@@ -753,10 +753,8 @@ with tab_discrete_dict:
             label="Choose the resolution method",
             options=[
                 "NN Frank-Wolfe",
-                "Frank-Wolfe",
                 "NN gready algo",
                 "FISTA with backtracking",
-                "Proximal Gradient with backtracking",
                 "Proximal Gradient with constant step-size",
                 "Projected gradient",
             ],
@@ -1810,390 +1808,6 @@ with tab_NMF:
 
                 st.plotly_chart(fig)
 
-# region tab_rc
-# with tab_rc:
-#     col01, col02, col03 = st.columns([1, 3, 1])
-#     with col02:
-#         st.header("Approximation of our observation by reference curves")
-#         st.markdown(
-#             """In this section we don't use any NMF algorithm. Instead we use reference curves 
-#                     that has been build from various curves of our data set that has been certified as 
-#                     pure by experts. We're going to use these curves to compare them with the end-members
-#                     we find and also to build differents approximations."""
-#         )
-
-#         st.subheader("Scaled reference curves")
-#         fig = go.Figure()
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
-#                 y=st.session_state["scaled_ref_curves"]["Argiles Fines"],
-#                 mode="lines",
-#                 name="Argiles Fines (<1 microns)",
-#             )
-#         )
-#         fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
-#         fig.update_layout(
-#             height=500,
-#             showlegend=True,
-#             xaxis_title=" grain diameter (micrometers, log-scale)",
-#         )
-#         fig.update_traces(
-#             hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
-
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
-#                 y=st.session_state["scaled_ref_curves"]["Argiles Classiques"],
-#                 mode="lines",
-#                 name="Argiles Grossieres (1-7 microns)",
-#             )
-#         )
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-#                 y=st.session_state["scaled_ref_curves"]["Limons fins"],
-#                 mode="lines",
-#                 name="Alterites (7-20 microns)",
-#             )
-#         )
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
-#                 y=st.session_state["scaled_ref_curves"]["Sables Fins"],
-#                 mode="lines",
-#                 name="Sables Fins (50-100 microns)",
-#             )
-#         )
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
-#                 y=st.session_state["scaled_ref_curves"]["Sables Grossiers"],
-#                 mode="lines",
-#                 name="Sables Grossiers (>100 microns)",
-#             )
-#         )
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=st.session_state["ref_curves"]["ref_LimonsGrossiers"][0, :],
-#                 y=st.session_state["scaled_ref_curves"]["Limons Grossiers"],
-#                 mode="lines",
-#                 name="Limons Grossiers",
-#             )
-#         )
-#         fig.add_trace(
-#             go.Scatter(
-#                 x=st.session_state["ref_curves"]["ref_Loess_without_residules"][0, :],
-#                 y=st.session_state["scaled_ref_curves"]["Loess (without residues)"],
-#                 mode="lines",
-#                 name="Loess (without residues)",
-#             )
-#         )
-#         # fig.add_trace(
-#         #     go.Scatter(
-#         #         x=st.session_state["ref_curves"]["ref_Loess"][0, :],
-#         #         y=st.session_state["scaled_ref_curves"]["ref_Loess"],
-#         #         mode="lines",
-#         #         name="Loess",
-#         #     )
-#         # )
-
-#         st.plotly_chart(fig)
-
-#         st.subheader("List of reference curves")
-#         st.markdown(f"""There are 8 differents reference curves that are mainly characterised by the location
-#                     of the peak on the x axis (diametre in $\\mu m$). You can see their plots below.""")
-
-#         with st.expander("List of reference curves :"):
-
-#             st.markdown(
-#                 "We plot first the reference curve of the Argiles Fines (fine clay) because its peak is much greater than the others"
-#             )
-
-#             fig = go.Figure()
-#             fig.add_trace(
-#                 go.Scatter(
-#                     x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
-#                     y=st.session_state["ref_curves"]["ref_ArgilesFines"][1, :],
-#                     mode="lines",
-#                     name="Argiles Fines (<1 microns)",
-#                 )
-#             )
-#             fig.update_xaxes(type="log", tickformat=".1e",
-#                              dtick=1, showgrid=True)
-#             fig.update_layout(
-#                 height=500,
-#                 showlegend=True,
-#                 xaxis_title=" grain diametere (micrometers, log-scale)",
-#             )
-#             fig.update_traces(
-#                 hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
-
-#             st.plotly_chart(fig)
-
-#             fig = go.Figure()
-#             fig.add_trace(
-#                 go.Scatter(
-#                     x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
-#                     y=st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :],
-#                     mode="lines",
-#                     name="Argiles Grossieres (1-7 microns)",
-#                 )
-#             )
-#             fig.add_trace(
-#                 go.Scatter(
-#                     x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
-#                     y=st.session_state["ref_curves"]["ref_Alterites"][1, :],
-#                     mode="lines",
-#                     name="Alterites (7-20 microns)",
-#                 )
-#             )
-#             fig.add_trace(
-#                 go.Scatter(
-#                     x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
-#                     y=st.session_state["ref_curves"]["ref_SablesFins"][1, :],
-#                     mode="lines",
-#                     name="Sables Fins (50-100 microns)",
-#                 )
-#             )
-#             fig.add_trace(
-#                 go.Scatter(
-#                     x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
-#                     y=st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :],
-#                     mode="lines",
-#                     name="Sables Grossiers (>100 microns)",
-#                 )
-#             )
-
-#             fig.update_xaxes(type="log", tickformat=".1e", showgrid=True)
-#             fig.update_layout(
-#                 # Ajuster la hauteur de la figure en fonction du nombre de plots
-#                 height=500,
-#                 xaxis_title=" grain diametere (micrometers, log-scale)",
-#             )
-#             fig.update_traces(
-#                 hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
-
-#             st.plotly_chart(fig)
-
-#             st.markdown(
-#                 "For the peak located between 20 and 50 $\\mu m$ we can choose between 3 different reference curves :"
-#             )
-#             st.markdown(" - Limons Grossier")
-#             st.markdown(" - Limons Grossier-Loess")
-#             st.markdown(" - Limons Loess")
-
-#             fig = go.Figure()
-#             fig.add_trace(
-#                 go.Scatter(
-#                     x=st.session_state["ref_curves"]["ref_LimonsGrossiers"][0, :],
-#                     y=st.session_state["ref_curves"]["ref_LimonsGrossiers"][1, :],
-#                     mode="lines",
-#                     name="Limons Grossiers",
-#                 )
-#             )
-#             fig.add_trace(
-#                 go.Scatter(
-#                     x=st.session_state["ref_curves"]["ref_Loess_without_residules"][0, :],
-#                     y=st.session_state["ref_curves"]["ref_Loess_without_residules"][1, :],
-#                     mode="lines",
-#                     name="Limons Grossiers-Loess",
-#                 )
-#             )
-#             fig.add_trace(
-#                 go.Scatter(
-#                     x=st.session_state["ref_curves"]["ref_Loess"][0, :],
-#                     y=st.session_state["ref_curves"]["ref_Loess"][1, :],
-#                     mode="lines",
-#                     name="Loess",
-#                 )
-#             )
-
-#             fig.update_xaxes(type="log", tickformat=".1e",
-#                              dtick=1, showgrid=True)
-#             fig.update_layout(
-#                 # Ajuster la hauteur de la figure en fonction du nombre de plots
-#                 height=500,
-#                 xaxis_title=" grain diametere (micrometers, log-scale)",
-#             )
-#             fig.update_traces(
-#                 hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
-
-#             st.plotly_chart(fig)
-
-#         st.subheader(
-#             "Choice of the reference curve for the peak between 20 and 50 microns"
-#         )
-#         st.markdown(
-#             """As explainend in the list of reference curves we can choose between three reference curves 
-#                     (Limons grossier, Limon grossier-loess, Loess) for the peak between 20 and 50 $\\mu m$. Please 
-#                     select bellow which reference curve to use in approximation."""
-#         )
-#         st.session_state["ref_20_50"] = st.radio(
-#             "do no show",
-#             [
-#                 "All 3 at the same time",
-#                 "Limons Grossiers",
-#                 "Limons Grossiers-Loess",
-#                 "Loess",
-#             ],
-#             label_visibility="hidden",
-#         )
-
-#         st.subheader(
-#             "Algorithm to perform an approximation of X from the reference curves"
-#         )
-#         st.markdown(
-#             """We're now going to find the best combinaisons of our reference curves to approximate 
-#                     our observation X."""
-#         )
-#         st.markdown(
-#             "- $M_{ref}$ is the matrix that contains the 8 reference curves.")
-#         st.markdown(
-#             "- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation."
-#         )
-#         st.markdown("So we have the following problem :")
-#         st.latex(
-#             r""" A_{ref} = \arg \min_{A\geq 0} \Vert X-AM_{ref} \Vert_F^2 """)
-
-#         if st.button("Perform estimations with reference curves"):
-
-#             # Deleting other 20-50 microns that have not been selected
-#             st.session_state["ref_curves_selected"] = st.session_state[
-#                 "ref_curves"
-#             ].copy()
-#             st.session_state["rc_label"] = [
-#                 "Argiles Fines",
-#                 "Argiles Grossier",
-#                 "Limons fins",
-#                 "Sables Fins",
-#                 "Sables grossiers",
-#                 "Loess",
-#                 "Limon grossiers",
-#                 "Limons grossiers Loess",
-#             ]
-#             if st.session_state["ref_20_50"] == "Limons Grossiers":
-#                 del st.session_state["ref_curves_selected"]["ref_LimonsGrossiersLoess"]
-#                 del st.session_state["ref_curves_selected"]["ref_Loess"]
-#                 st.session_state["rc_label"][5] = "Limon grossiers"
-#                 st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
-#             elif st.session_state["ref_20_50"] == "Limons Grossiers-Loess":
-#                 del st.session_state["ref_curves_selected"]["ref_LimonsGrossiers"]
-#                 del st.session_state["ref_curves_selected"]["ref_Loess"]
-#                 st.session_state["rc_label"][5] = "Limon grossiers Loess"
-#                 st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
-#             elif st.session_state["ref_20_50"] == "Limons Grossiers-Loess":
-#                 del st.session_state["ref_curves_selected"]["ref_LimonsGrossiersLoess"]
-#                 del st.session_state["ref_curves_selected"]["ref_LimonsGrossiers"]
-#                 st.session_state["rc_label"][5] = "Loess"
-#                 st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
-#             # Do nothing if all 3 at the same time selected
-
-#             # Gathering y from every reference curve into our M_ref matrix
-#             M_ref = np.zeros(
-#                 (
-#                     len(st.session_state["ref_curves_selected"]),
-#                     st.session_state["ref_curves_selected"][
-#                         "ref_ArgilesClassiques"
-#                     ].shape[1],
-#                 )
-#             )
-#             for i, ref_curve in enumerate(st.session_state["ref_curves_selected"]):
-#                 M_ref[int(i), :] = st.session_state["ref_curves_selected"][ref_curve][
-#                     1, :
-#                 ]
-
-#             # A_ref is the mimimal argument of the optimisation problem
-#             X = st.session_state["granulometrics"].to_numpy()
-#             A_ref = X @ M_ref.T @ np.linalg.inv(M_ref @ M_ref.T)
-
-#             # Performing minimalization with CVXPY to compare
-#             # Declaration of our minimization variable A
-#             A = cp.Variable((X.shape[0], M_ref.shape[0]))
-#             # Constraint A to be positive
-#             constraints = [A >= 0]
-#             objective = cp.Minimize(
-#                 cp.norm(X - A @ M_ref, "fro") ** 2
-#             )  # Objective function
-#             # problem = cp.Problem(objective)                        # optim without constraint to compare with our direct solution
-#             # Definition of our problem
-#             problem = cp.Problem(objective, constraints)
-#             problem.solve(
-#                 solver=cp.SCS, verbose=True, eps=1e-10, max_iters=10000
-#             )  # Calling solver
-#             A_ref_solv = A.value  # We get the result
-
-#             # X_ref the approximations of our observations with ref_curves
-#             X_ref = pd.DataFrame(
-#                 A_ref_solv @ M_ref,
-#                 columns=st.session_state["granulometrics"].columns,
-#                 index=st.session_state["granulometrics"].index,
-#             )
-
-#             # df for the proportions
-#             RC_areas = np.apply_along_axis(trapeze_areas, 1, M_ref).reshape(
-#                 (A_ref_solv.shape[1])
-#             )  # compute areas of each EM
-#             Prop = A_ref_solv * RC_areas
-#             Prop = np.apply_along_axis(lambda x: x / np.sum(x) * 100, 1, Prop)
-
-#             # naming the columns of Prop with regards of where the peak is located for each EM
-#             st.session_state["Prop_rc"] = pd.DataFrame(
-#                 Prop,
-#                 index=st.session_state["granulometrics"].index,
-#                 columns=st.session_state["rc_label"],
-#             )
-
-#             # Approximation errors l2
-#             err2_approx_rc = np.sum(
-#                 np.linalg.norm(
-#                     X_ref - st.session_state["granulometrics"], axis=1)
-#             )
-#             # L1-relativ norm of each approximations
-#             st.session_state["Prop_rc"]["L1_rel_norm (%)"] = X_ref.apply(
-#                 lambda row: L1_relative(row.values, row.name), axis=1
-#             )
-#             # L1-relativ mean
-#             errL1_approx_rc = np.mean(
-#                 st.session_state["Prop_rc"]["L1_rel_norm (%)"])
-
-#             X_ref.index = X_ref.index.map(
-#                 lambda x: f"r{x}")  # adding "r" before
-
-#             # in this case we replace the old reference curves approximation
-#             if st.session_state["rc_flag"]:
-#                 for ind in X_ref.index:
-#                     st.session_state["X-X_hat-X_ref"].loc[ind] = X_ref.loc[ind]
-
-#             else:  # easier case : there isn't already a reference curves approximation
-#                 st.session_state["X-X_hat-X_ref"] = pd.concat(
-#                     [st.session_state["X-X_hat-X_ref"], X_ref], axis=0
-#                 )
-#                 st.session_state["rc_flag"] = True  # They are now result
-
-#             st.success("Approximation succeed")
-#             # Displaying approx errors
-#             col1, col2 = st.columns(2)
-#             with col1:
-#                 st.latex(r""" \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 """)
-#             with col2:
-#                 st.metric(
-#                     "sum of quadratic errors",
-#                     value=f"{err2_approx_rc:.4}",
-#                     label_visibility="visible",
-#                 )
-#             col1, col2 = st.columns(2)
-#             with col1:
-#                 st.latex(
-#                     r""" \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
-#                 )
-#             with col2:
-#                 st.metric(
-#                     "mean of L1-relative errors (%)",
-#                     value=f"{errL1_approx_rc:.3}%",
-#                     label_visibility="visible",
-#                 )
-# endregion
 
 with tab_result:
 
@@ -2630,6 +2244,390 @@ with tab_result:
                 
                 
 
+# region tab_rc
+# with tab_rc:
+#     col01, col02, col03 = st.columns([1, 3, 1])
+#     with col02:
+#         st.header("Approximation of our observation by reference curves")
+#         st.markdown(
+#             """In this section we don't use any NMF algorithm. Instead we use reference curves 
+#                     that has been build from various curves of our data set that has been certified as 
+#                     pure by experts. We're going to use these curves to compare them with the end-members
+#                     we find and also to build differents approximations."""
+#         )
+
+#         st.subheader("Scaled reference curves")
+#         fig = go.Figure()
+#         fig.add_trace(
+#             go.Scatter(
+#                 x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
+#                 y=st.session_state["scaled_ref_curves"]["Argiles Fines"],
+#                 mode="lines",
+#                 name="Argiles Fines (<1 microns)",
+#             )
+#         )
+#         fig.update_xaxes(type="log", tickformat=".1e", dtick=1, showgrid=True)
+#         fig.update_layout(
+#             height=500,
+#             showlegend=True,
+#             xaxis_title=" grain diameter (micrometers, log-scale)",
+#         )
+#         fig.update_traces(
+#             hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+
+#         fig.add_trace(
+#             go.Scatter(
+#                 x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
+#                 y=st.session_state["scaled_ref_curves"]["Argiles Classiques"],
+#                 mode="lines",
+#                 name="Argiles Grossieres (1-7 microns)",
+#             )
+#         )
+#         fig.add_trace(
+#             go.Scatter(
+#                 x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
+#                 y=st.session_state["scaled_ref_curves"]["Limons fins"],
+#                 mode="lines",
+#                 name="Alterites (7-20 microns)",
+#             )
+#         )
+#         fig.add_trace(
+#             go.Scatter(
+#                 x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
+#                 y=st.session_state["scaled_ref_curves"]["Sables Fins"],
+#                 mode="lines",
+#                 name="Sables Fins (50-100 microns)",
+#             )
+#         )
+#         fig.add_trace(
+#             go.Scatter(
+#                 x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
+#                 y=st.session_state["scaled_ref_curves"]["Sables Grossiers"],
+#                 mode="lines",
+#                 name="Sables Grossiers (>100 microns)",
+#             )
+#         )
+#         fig.add_trace(
+#             go.Scatter(
+#                 x=st.session_state["ref_curves"]["ref_LimonsGrossiers"][0, :],
+#                 y=st.session_state["scaled_ref_curves"]["Limons Grossiers"],
+#                 mode="lines",
+#                 name="Limons Grossiers",
+#             )
+#         )
+#         fig.add_trace(
+#             go.Scatter(
+#                 x=st.session_state["ref_curves"]["ref_Loess_without_residules"][0, :],
+#                 y=st.session_state["scaled_ref_curves"]["Loess (without residues)"],
+#                 mode="lines",
+#                 name="Loess (without residues)",
+#             )
+#         )
+#         # fig.add_trace(
+#         #     go.Scatter(
+#         #         x=st.session_state["ref_curves"]["ref_Loess"][0, :],
+#         #         y=st.session_state["scaled_ref_curves"]["ref_Loess"],
+#         #         mode="lines",
+#         #         name="Loess",
+#         #     )
+#         # )
+
+#         st.plotly_chart(fig)
+
+#         st.subheader("List of reference curves")
+#         st.markdown(f"""There are 8 differents reference curves that are mainly characterised by the location
+#                     of the peak on the x axis (diametre in $\\mu m$). You can see their plots below.""")
+
+#         with st.expander("List of reference curves :"):
+
+#             st.markdown(
+#                 "We plot first the reference curve of the Argiles Fines (fine clay) because its peak is much greater than the others"
+#             )
+
+#             fig = go.Figure()
+#             fig.add_trace(
+#                 go.Scatter(
+#                     x=st.session_state["ref_curves"]["ref_ArgilesFines"][0, :],
+#                     y=st.session_state["ref_curves"]["ref_ArgilesFines"][1, :],
+#                     mode="lines",
+#                     name="Argiles Fines (<1 microns)",
+#                 )
+#             )
+#             fig.update_xaxes(type="log", tickformat=".1e",
+#                              dtick=1, showgrid=True)
+#             fig.update_layout(
+#                 height=500,
+#                 showlegend=True,
+#                 xaxis_title=" grain diametere (micrometers, log-scale)",
+#             )
+#             fig.update_traces(
+#                 hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>")
+
+#             st.plotly_chart(fig)
+
+#             fig = go.Figure()
+#             fig.add_trace(
+#                 go.Scatter(
+#                     x=st.session_state["ref_curves"]["ref_ArgilesClassiques"][0, :],
+#                     y=st.session_state["ref_curves"]["ref_ArgilesClassiques"][1, :],
+#                     mode="lines",
+#                     name="Argiles Grossieres (1-7 microns)",
+#                 )
+#             )
+#             fig.add_trace(
+#                 go.Scatter(
+#                     x=st.session_state["ref_curves"]["ref_Alterites"][0, :],
+#                     y=st.session_state["ref_curves"]["ref_Alterites"][1, :],
+#                     mode="lines",
+#                     name="Alterites (7-20 microns)",
+#                 )
+#             )
+#             fig.add_trace(
+#                 go.Scatter(
+#                     x=st.session_state["ref_curves"]["ref_SablesFins"][0, :],
+#                     y=st.session_state["ref_curves"]["ref_SablesFins"][1, :],
+#                     mode="lines",
+#                     name="Sables Fins (50-100 microns)",
+#                 )
+#             )
+#             fig.add_trace(
+#                 go.Scatter(
+#                     x=st.session_state["ref_curves"]["ref_SablesGrossiers"][0, :],
+#                     y=st.session_state["ref_curves"]["ref_SablesGrossiers"][1, :],
+#                     mode="lines",
+#                     name="Sables Grossiers (>100 microns)",
+#                 )
+#             )
+
+#             fig.update_xaxes(type="log", tickformat=".1e", showgrid=True)
+#             fig.update_layout(
+#                 # Ajuster la hauteur de la figure en fonction du nombre de plots
+#                 height=500,
+#                 xaxis_title=" grain diametere (micrometers, log-scale)",
+#             )
+#             fig.update_traces(
+#                 hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+
+#             st.plotly_chart(fig)
+
+#             st.markdown(
+#                 "For the peak located between 20 and 50 $\\mu m$ we can choose between 3 different reference curves :"
+#             )
+#             st.markdown(" - Limons Grossier")
+#             st.markdown(" - Limons Grossier-Loess")
+#             st.markdown(" - Limons Loess")
+
+#             fig = go.Figure()
+#             fig.add_trace(
+#                 go.Scatter(
+#                     x=st.session_state["ref_curves"]["ref_LimonsGrossiers"][0, :],
+#                     y=st.session_state["ref_curves"]["ref_LimonsGrossiers"][1, :],
+#                     mode="lines",
+#                     name="Limons Grossiers",
+#                 )
+#             )
+#             fig.add_trace(
+#                 go.Scatter(
+#                     x=st.session_state["ref_curves"]["ref_Loess_without_residules"][0, :],
+#                     y=st.session_state["ref_curves"]["ref_Loess_without_residules"][1, :],
+#                     mode="lines",
+#                     name="Limons Grossiers-Loess",
+#                 )
+#             )
+#             fig.add_trace(
+#                 go.Scatter(
+#                     x=st.session_state["ref_curves"]["ref_Loess"][0, :],
+#                     y=st.session_state["ref_curves"]["ref_Loess"][1, :],
+#                     mode="lines",
+#                     name="Loess",
+#                 )
+#             )
+
+#             fig.update_xaxes(type="log", tickformat=".1e",
+#                              dtick=1, showgrid=True)
+#             fig.update_layout(
+#                 # Ajuster la hauteur de la figure en fonction du nombre de plots
+#                 height=500,
+#                 xaxis_title=" grain diametere (micrometers, log-scale)",
+#             )
+#             fig.update_traces(
+#                 hovertemplate="X: %{x:.0f}<br>Y: %{y:.2f}<extra></extra>")
+
+#             st.plotly_chart(fig)
+
+#         st.subheader(
+#             "Choice of the reference curve for the peak between 20 and 50 microns"
+#         )
+#         st.markdown(
+#             """As explainend in the list of reference curves we can choose between three reference curves 
+#                     (Limons grossier, Limon grossier-loess, Loess) for the peak between 20 and 50 $\\mu m$. Please 
+#                     select bellow which reference curve to use in approximation."""
+#         )
+#         st.session_state["ref_20_50"] = st.radio(
+#             "do no show",
+#             [
+#                 "All 3 at the same time",
+#                 "Limons Grossiers",
+#                 "Limons Grossiers-Loess",
+#                 "Loess",
+#             ],
+#             label_visibility="hidden",
+#         )
+
+#         st.subheader(
+#             "Algorithm to perform an approximation of X from the reference curves"
+#         )
+#         st.markdown(
+#             """We're now going to find the best combinaisons of our reference curves to approximate 
+#                     our observation X."""
+#         )
+#         st.markdown(
+#             "- $M_{ref}$ is the matrix that contains the 8 reference curves.")
+#         st.markdown(
+#             "- $A_{ref}$ is the matrix that contains the best combinaisons to approximate each observation."
+#         )
+#         st.markdown("So we have the following problem :")
+#         st.latex(
+#             r""" A_{ref} = \arg \min_{A\geq 0} \Vert X-AM_{ref} \Vert_F^2 """)
+
+#         if st.button("Perform estimations with reference curves"):
+
+#             # Deleting other 20-50 microns that have not been selected
+#             st.session_state["ref_curves_selected"] = st.session_state[
+#                 "ref_curves"
+#             ].copy()
+#             st.session_state["rc_label"] = [
+#                 "Argiles Fines",
+#                 "Argiles Grossier",
+#                 "Limons fins",
+#                 "Sables Fins",
+#                 "Sables grossiers",
+#                 "Loess",
+#                 "Limon grossiers",
+#                 "Limons grossiers Loess",
+#             ]
+#             if st.session_state["ref_20_50"] == "Limons Grossiers":
+#                 del st.session_state["ref_curves_selected"]["ref_LimonsGrossiersLoess"]
+#                 del st.session_state["ref_curves_selected"]["ref_Loess"]
+#                 st.session_state["rc_label"][5] = "Limon grossiers"
+#                 st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
+#             elif st.session_state["ref_20_50"] == "Limons Grossiers-Loess":
+#                 del st.session_state["ref_curves_selected"]["ref_LimonsGrossiers"]
+#                 del st.session_state["ref_curves_selected"]["ref_Loess"]
+#                 st.session_state["rc_label"][5] = "Limon grossiers Loess"
+#                 st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
+#             elif st.session_state["ref_20_50"] == "Limons Grossiers-Loess":
+#                 del st.session_state["ref_curves_selected"]["ref_LimonsGrossiersLoess"]
+#                 del st.session_state["ref_curves_selected"]["ref_LimonsGrossiers"]
+#                 st.session_state["rc_label"][5] = "Loess"
+#                 st.session_state["rc_label"] = st.session_state["rc_label"][0:6]
+#             # Do nothing if all 3 at the same time selected
+
+#             # Gathering y from every reference curve into our M_ref matrix
+#             M_ref = np.zeros(
+#                 (
+#                     len(st.session_state["ref_curves_selected"]),
+#                     st.session_state["ref_curves_selected"][
+#                         "ref_ArgilesClassiques"
+#                     ].shape[1],
+#                 )
+#             )
+#             for i, ref_curve in enumerate(st.session_state["ref_curves_selected"]):
+#                 M_ref[int(i), :] = st.session_state["ref_curves_selected"][ref_curve][
+#                     1, :
+#                 ]
+
+#             # A_ref is the mimimal argument of the optimisation problem
+#             X = st.session_state["granulometrics"].to_numpy()
+#             A_ref = X @ M_ref.T @ np.linalg.inv(M_ref @ M_ref.T)
+
+#             # Performing minimalization with CVXPY to compare
+#             # Declaration of our minimization variable A
+#             A = cp.Variable((X.shape[0], M_ref.shape[0]))
+#             # Constraint A to be positive
+#             constraints = [A >= 0]
+#             objective = cp.Minimize(
+#                 cp.norm(X - A @ M_ref, "fro") ** 2
+#             )  # Objective function
+#             # problem = cp.Problem(objective)                        # optim without constraint to compare with our direct solution
+#             # Definition of our problem
+#             problem = cp.Problem(objective, constraints)
+#             problem.solve(
+#                 solver=cp.SCS, verbose=True, eps=1e-10, max_iters=10000
+#             )  # Calling solver
+#             A_ref_solv = A.value  # We get the result
+
+#             # X_ref the approximations of our observations with ref_curves
+#             X_ref = pd.DataFrame(
+#                 A_ref_solv @ M_ref,
+#                 columns=st.session_state["granulometrics"].columns,
+#                 index=st.session_state["granulometrics"].index,
+#             )
+
+#             # df for the proportions
+#             RC_areas = np.apply_along_axis(trapeze_areas, 1, M_ref).reshape(
+#                 (A_ref_solv.shape[1])
+#             )  # compute areas of each EM
+#             Prop = A_ref_solv * RC_areas
+#             Prop = np.apply_along_axis(lambda x: x / np.sum(x) * 100, 1, Prop)
+
+#             # naming the columns of Prop with regards of where the peak is located for each EM
+#             st.session_state["Prop_rc"] = pd.DataFrame(
+#                 Prop,
+#                 index=st.session_state["granulometrics"].index,
+#                 columns=st.session_state["rc_label"],
+#             )
+
+#             # Approximation errors l2
+#             err2_approx_rc = np.sum(
+#                 np.linalg.norm(
+#                     X_ref - st.session_state["granulometrics"], axis=1)
+#             )
+#             # L1-relativ norm of each approximations
+#             st.session_state["Prop_rc"]["L1_rel_norm (%)"] = X_ref.apply(
+#                 lambda row: L1_relative(row.values, row.name), axis=1
+#             )
+#             # L1-relativ mean
+#             errL1_approx_rc = np.mean(
+#                 st.session_state["Prop_rc"]["L1_rel_norm (%)"])
+
+#             X_ref.index = X_ref.index.map(
+#                 lambda x: f"r{x}")  # adding "r" before
+
+#             # in this case we replace the old reference curves approximation
+#             if st.session_state["rc_flag"]:
+#                 for ind in X_ref.index:
+#                     st.session_state["X-X_hat-X_ref"].loc[ind] = X_ref.loc[ind]
+
+#             else:  # easier case : there isn't already a reference curves approximation
+#                 st.session_state["X-X_hat-X_ref"] = pd.concat(
+#                     [st.session_state["X-X_hat-X_ref"], X_ref], axis=0
+#                 )
+#                 st.session_state["rc_flag"] = True  # They are now result
+
+#             st.success("Approximation succeed")
+#             # Displaying approx errors
+#             col1, col2 = st.columns(2)
+#             with col1:
+#                 st.latex(r""" \sum_{i=1}^{n} \Vert x_i-{x_{ref,i}} \Vert_2 """)
+#             with col2:
+#                 st.metric(
+#                     "sum of quadratic errors",
+#                     value=f"{err2_approx_rc:.4}",
+#                     label_visibility="visible",
+#                 )
+#             col1, col2 = st.columns(2)
+#             with col1:
+#                 st.latex(
+#                     r""" \sum_{i=1}^{n} \frac{\Vert x_i-{x_{ref,i}} \Vert_{L1}}{\Vert x_i \Vert_{L1}} """
+#                 )
+#             with col2:
+#                 st.metric(
+#                     "mean of L1-relative errors (%)",
+#                     value=f"{errL1_approx_rc:.3}%",
+#                     label_visibility="visible",
+#                 )
+# endregion
 
 
 # region tab_robust
