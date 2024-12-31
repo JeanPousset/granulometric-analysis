@@ -1,3 +1,4 @@
+Granulometric analysis web app
 
 Web application for Granulometric (grain-size) data analysis developped during an IRMAR internship
 ---
@@ -22,7 +23,7 @@ DON'T HESITATE TO CONTACT ME FOR HELP / MORE EXPLANATIONS
 - François Pustoc'h (CreAAH)
 - [Simond Puaud (CreAAH)](https://creaah.cnrs.fr/team/puaud-simon-1/) 
 
-Code writer of the BLASSO results : [Clément Elvira (IETR / SCEE)](https://c-elvira.github.io/)
+Code writer of the algorithme that produced the BLASSO results : [Clément Elvira (IETR / SCEE)](https://c-elvira.github.io/)
 
 # Installation
 
@@ -90,9 +91,9 @@ Open a terminal and navigate to where you put or cloned the repository. (i.e typ
 
 ```bash
 $ ls
-B-LASSO_imports       README.md             ref_curves_&_exemples
-Data                  backends              requirements.txt
-IRMAR_report          exports               streamlit_app.py
+> B-LASSO_imports       README.md             ref_curves_&_exemples
+> Data                  backends              requirements.txt
+> IRMAR_report          exports               streamlit_app.py
 ```
 
 To run the app you just have to write the following command :
@@ -103,11 +104,11 @@ streamlit run streamlit_app.py
 After a few seconds you should see this message on your terminal :
 
 ```bash
-You can now view your Streamlit app in your browser.
-
-  Local URL: http://localhost:8501
-  Network URL: http://192.168.1.18:8501
-  External URL: http://90.49.34.45:8501
+> You can now view your Streamlit app in your browser.
+> 
+>   Local URL: http://localhost:8501
+>   Network URL: http://192.168.1.18:8501
+>   External URL: http://90.49.34.45:8501
 ```
 
 It means the app has been successfully lunched. To access it please open the Local URL (here for me http://localhost:8501) in your browser. 
