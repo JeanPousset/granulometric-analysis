@@ -1,11 +1,16 @@
-# Granulometric analysis web app
 
 Web application for Granulometric (grain-size) data analysis developped during an IRMAR internship
+---
+- [Info](#Info)
+- [Installation](##Installation)
+- [Use](##Usage)
+---
 
-## Info 
+# Info 
 
 #### Author :
 Jean Pousset (4th year Applied Maths INSA Rennes)  contact : [pousset.jean1@gmail.com](pousset.jean1@gmail.com)
+
 DON'T HESITATE TO CONTACT ME FOR HELP / MORE EXPLANATIONS
 
 #### [Internship report](IRMAR_report/Rapport_IRMAR_décomposition_courbe_granulométriques_Jean_POUSSET.pdf)
@@ -19,7 +24,7 @@ DON'T HESITATE TO CONTACT ME FOR HELP / MORE EXPLANATIONS
 
 Code writer of the BLASSO results : [Clément Elvira (IETR / SCEE)](https://c-elvira.github.io/)
 
-## Installation
+# Installation
 
 Either download or clone all of the repository locally.
 
@@ -43,7 +48,8 @@ sudo apt install python3
 sudo apt install python3-pip
 ```
 
--  MacOS (with homebrew). If you need you can find the installation documentation for homebrew  [here](https://brew.sh/)
+-  MacOS (with homebrew) :
+If you need you can find the installation documentation for homebrew  [here](https://brew.sh/)
 ```bash
 brew update
 brew install python
@@ -78,7 +84,7 @@ pip install openpyxl
 ```
 
 
-## Usage
+# Usage
 
 Open a terminal and navigate to where you put or cloned the repository. (i.e type `cd {directory_path}` where *directory_path* is the path). When you type `ls` in the terminal you should have the following list prompted :
 
