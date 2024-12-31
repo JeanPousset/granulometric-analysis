@@ -1,5 +1,5 @@
 """
-%> Web application Granulometric (grain-size) data analysis during an IRMAR internship <% 
+%> Web application for Granulometric (grain-size) data analysis developped during an IRMAR internship <% 
 
 Author :
 Jean Pousset (4th year Applied Maths INSA Rennes)  contact : pousset.jean1@gmail.com 
@@ -290,7 +290,7 @@ with tab_intro:
         'font': {'size': 20},
         'orientation': "h",  
         'yanchor': "bottom", 
-        'y': 1.02,           
+        'y': 4.02,           
         'xanchor': "center",  
         'x': 0.5             
     },
