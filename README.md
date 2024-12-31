@@ -36,15 +36,15 @@ If not (an error is prompted) please install it with the following commands depe
 - ![Windows](https://upload.wikimedia.org/wikipedia/commons/4/4e/Windows_logo_-_2021.svg) Windows : 
 go on [official python installation page] (https://www.python.org/downloads/) and follow instruction to install it on Windows.
 
-- ![Linux](https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg) Linux:
+- <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Apple" width="100">
+Linux:
 ```bash
 sudo apt update
 sudo apt install python3
 sudo apt install python3-pip
 ```
 
-- ![macOS] (https://upload.wikimedia.org/wikipedia/commons/a/ab/Apple-logo.png) MacOS (with homebrew):
-Si besoin voici un lien pour installer [homebrew](https://brew.sh/)
+-  MacOS (with homebrew). If you need you can find the installation documentation for homebrew  [here](https://brew.sh/)
 ```bash
 brew update
 brew install python
