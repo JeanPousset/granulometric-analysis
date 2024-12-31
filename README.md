@@ -32,7 +32,8 @@ pip --version
 ```
 
 If not (an error is prompted) please install it with the following commands depending on your OS.
-- <img src="https://commons.wikimedia.org/wiki/File:Windows_10_Logo.svg#/media/File:Windows_logo_-_2012_(dark_blue).svg" alt="Logo Windows" width="15"> Windows : 
+- <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows : 
+
 go on [official python installation page] (https://www.python.org/downloads/) and follow instruction to install it on Windows.
 
 - <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux:
