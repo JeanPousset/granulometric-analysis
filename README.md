@@ -32,12 +32,10 @@ pip --version
 ```
 
 If not (an error is prompted) please install it with the following commands depending on your OS.
-
-- ![Windows](https://upload.wikimedia.org/wikipedia/commons/4/4e/Windows_logo_-_2021.svg) Windows : 
+- <img src="https://www.svgrepo.com/svg/110996/windows-logo" alt="Logo Windows" width="10"> Windows : 
 go on [official python installation page] (https://www.python.org/downloads/) and follow instruction to install it on Windows.
 
-- <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Apple" width="100">
-Linux:
+- <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="10"> Linux:
 ```bash
 sudo apt update
 sudo apt install python3
