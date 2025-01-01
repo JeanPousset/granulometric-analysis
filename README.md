@@ -1,6 +1,4 @@
 Granulometric analysis web app
-
-Web application for Granulometric (grain-size) data analysis developped during an IRMAR internship
 ---
 - [Info](#Info)
 - [Installation](##Installation)
@@ -9,17 +7,20 @@ Web application for Granulometric (grain-size) data analysis developped during a
 
 # Info 
 
-#### Author :
+Web application for Granulometric (grain-size) data analysis developped during an IRMAR internship
+
+
+### Author :
 Jean Pousset (4th year Applied Maths INSA Rennes)  contact : [pousset.jean1@gmail.com](pousset.jean1@gmail.com)
 
 DON'T HESITATE TO CONTACT ME FOR HELP / MORE EXPLANATIONS
 
-#### [Internship report](IRMAR_report/Rapport_IRMAR_décomposition_courbe_granulométriques_Jean_POUSSET.pdf)
-#### Guidance:
+### [Internship report](IRMAR_report/Rapport_IRMAR_décomposition_courbe_granulométriques_Jean_POUSSET.pdf)
+### Guidance:
 - [Valérie Monbet (IRMAR)] (https://perso.univ-rennes1.fr/valerie.monbet/)
 - [Fabrice Mahé (IRMAR)] (https://perso.univ-rennes1.fr/fabrice.mahe/)
 
-#### Data proveiders :
+### Data proveiders :
 - François Pustoc'h (CreAAH)
 - [Simond Puaud (CreAAH)](https://creaah.cnrs.fr/team/puaud-simon-1/) 
 
@@ -29,9 +30,9 @@ Code writer of the algorithme that produced the BLASSO results : [Clément Elvir
 
 Either download or clone all of the repository locally.
 
-#### Python installation
+### Python installation
 
-First check if you have python (version 3.0 or greater) and pip installed in your computer :
+First check if you have python (version 3.0 or greater) and pip installed in your computer. Open a terminal window in your computer and run the following commands :
 ```bash
 python3 --version
 pip --version
@@ -59,13 +60,13 @@ brew install python
 If you don't want to use homebrew you can install python directly on the [official python installation page](https://www.python.org/downloads/)
 
 
-#### Streamlit and other package
+### Streamlit and other package
 
-First you need to install streamlit (package to lunch web application in python) : 
+First you need to install streamlit (package to lunch web application in python). Open a terminal window and run this command :
 ```bash
 pip install streamlit
 ```
-If it don't work try with `pip3` instead of `pip`. Verify the installation with :
+If it doesn't work try with `pip3` instead of `pip`. Verify the installation with :
 ```bash
 streamlit --version
 ```
