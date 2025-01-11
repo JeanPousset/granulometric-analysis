@@ -35,7 +35,8 @@ When you get to the page, you may have to click on the alert to restart the serv
 
 Start by downloading or cloning the entire repository locally.
 
-⚠️ **Warning : WINDOWS users :** ⚠️
+⚠️ **Warning : <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> WINDOWS users :** ⚠️
+
 If you are on windows command keywords for Python may be differents. For the next steps, try replacing `python3` with `py` and `pip` with `py -m pip`.
 
 
@@ -50,7 +51,7 @@ pip --version
 If not (an error is prompted) please install it with the following commands depending on your OS.
 - <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows : 
 
-go on [official python installation page] (https://www.python.org/downloads/) and follow instruction to install it on Windows.
+Go on [official python installation page](https://www.python.org/downloads/) and follow instruction to install it on Windows.
 
 - <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux:
 ```bash
