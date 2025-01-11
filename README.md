@@ -28,9 +28,12 @@ Code writer of the algorithme that produced the BLASSO results : [Clément Elvir
 
 # Online use
 
+You can easily use the online application via the link: https://granulometric-analysis.streamlit.app/ . 
+When you get to the page, you may have to click on the alert to restart the server. It automatically shuts down when there has been no access for 48 hours.
+
 # Local Installation
 
-Either download or clone all of the repository locally.
+Start by downloading or cloning the entire repository locally.
 
 ⚠️ ** Warning : WINDOWS users :** ⚠️
 If you are on windows command keywords for Python may be differents. For the next steps, try replacing `python3` with `py` and `pip` with `py -m pip`.
