@@ -35,7 +35,7 @@ When you get to the page, you may have to click on the alert to restart the serv
 
 Start by downloading or cloning the entire repository locally.
 
-⚠️ ** Warning : WINDOWS users :** ⚠️
+⚠️ **Warning : WINDOWS users :** ⚠️
 If you are on windows command keywords for Python may be differents. For the next steps, try replacing `python3` with `py` and `pip` with `py -m pip`.
 
 
