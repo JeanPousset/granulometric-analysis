@@ -26,9 +26,15 @@ DON'T HESITATE TO CONTACT ME FOR HELP / MORE EXPLANATIONS
 
 Code writer of the algorithme that produced the BLASSO results : [Clément Elvira (IETR / SCEE)](https://c-elvira.github.io/)
 
-# Installation
+# Online use
+
+# Local Installation
 
 Either download or clone all of the repository locally.
+
+⚠️ ** Warning : WINDOWS users :** ⚠️
+If you are on windows command keywords for Python may be differents. For the next steps, try replacing `python3` with `py` and `pip` with `py -m pip`.
+
 
 ### Python installation
 
@@ -86,7 +92,7 @@ pip install openpyxl
 ```
 
 
-# Usage
+# Locale use
 
 Open a terminal and navigate to where you put or cloned the repository. (i.e type `cd {directory_path}` where *directory_path* is the path). When you type `ls` in the terminal you should have the following list prompted :
 
