@@ -641,7 +641,7 @@ with tab_continous_dict:
         )
 
         st.markdown(
-            """ The first plot is the best approximation that is possible if we use a discrete dictionnary made
+            """ The first plot is the best approximation that is possible if we use a Discrete Dictionary made
                     by replicating curve and translate them by step : $\\Delta = 1$. We can see that the approximation can't
                     overlap the observation because of because of this non-continuity."""
         )
@@ -683,7 +683,7 @@ with tab_continous_dict:
         fig.update_xaxes(tickformat=".0", dtick=1, showgrid=True)
         fig.update_yaxes(showgrid=False)
         fig.update_layout(
-            title="Lasso on a discrete dictionnary",
+            title="Lasso on a Discrete Dictionary",
             height=500,
             width=700,
         )
@@ -730,11 +730,11 @@ with tab_discrete_dict:
 
         # region input param
 
-        st.markdown("<h1 style='text-align: center;'>Discrete dictionnary</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center;'>Discrete Dictionary</h1>", unsafe_allow_html=True)
         st.markdown("---")                
 
         st.markdown(
-            r"""In this section we try do decompose our observations with a discrete dictionnary 
+            r"""In this section we try do decompose our observations with a Discrete Dictionary 
                     of unimodale curves $(\mathcal{M})$ obtained by duplicating the reference curves and shifting the spike
                      locations. To obtain these decomposition we're going to resolve the following optimization 
                     problem for each observation $x$ :"""
@@ -781,7 +781,7 @@ with tab_discrete_dict:
 
         if st.button("Run decomposition"):
 
-            # region Creation of the discrete dictionnary
+            # region Creation of the Discrete Dictionary
             mesurement_points = st.session_state["granulometrics"].columns
             st.session_state["discrete_dictionnary"] = pd.DataFrame(
                 columns=mesurement_points
@@ -1853,26 +1853,26 @@ with tab_result:
     #     )
     with col3:
         st.toggle(
-            "Plot discrete dictionnary approximations",
+            "Plot Discrete Dictionary approximations",
             key="flag_nnlasso_approx",
             value=True,
             disabled=not st.session_state["dd_flag"],
         )
         st.toggle(
-            "Display discrete dictionnary component proportions and errors",
+            "Display Discrete Dictionary component proportions and errors",
             key = 'flag_dd_prop',
             value = True,
             disabled=not st.session_state["dd_flag"]
         )
     with col4:
         st.toggle(
-            "Plot continuous dictionnary approximations",
+            "Plot Continuous Dictionary approximations",
             key = "flag_blasso_approx",
             value = True,
             disabled= not st.session_state["cd_flag"] or st.session_state['flag_other_dataset']
         )
         st.toggle(
-            "Display continuous dictionnary component proportions and errors",
+            "Display Continuous Dictionary component proportions and errors",
             key = 'flag_cd_prop',
             value = True,
             disabled = not st.session_state["cd_flag"] or st.session_state['flag_other_dataset']
@@ -1965,8 +1965,8 @@ with tab_result:
         if st.session_state['result_type_export'] == "Proportions of decomposition" or st.session_state['result_type_export'] == "Quality of approximation":
             methods_options = [
                 option for flag, option in [
-                    (st.session_state['cd_flag'], "Continuous Dictionnary"),
-                    (st.session_state['dd_flag'], "Discrete Dictionnary"),
+                    (st.session_state['cd_flag'], "Continuous Dictionary"),
+                    (st.session_state['dd_flag'], "Discrete Dictionary"),
                     (st.session_state['nmf_flag'], "NMF")
                 ] if flag
             ]
@@ -1977,10 +1977,10 @@ with tab_result:
         with col1:
             st.radio("**Which method ?**", options = methods_options,index = 0,key='method_result')
             
-        if st.session_state['result_type_export'] == "Proportions of decomposition" and (st.session_state['method_result'] == "Continuous Dictionnary" or st.session_state['method_result'] == "Discrete Dictionnairy"):
+        if st.session_state['result_type_export'] == "Proportions of decomposition" and (st.session_state['method_result'] == "Continuous Dictionary" or st.session_state['method_result'] == "Discrete Dictionary"):
             export_extensions = [".json"]
         else :
-            export_extensions = [".txt",".csv",".xlsx"]
+            export_extensions = [".csv",".xlsx",".txt"]
 
         with col2:
             st.segmented_control("**Exportation format**",options = export_extensions,selection_mode="single",default=export_extensions[0],key='export_result_format')
@@ -1988,8 +1988,8 @@ with tab_result:
         # Dictionnary to handle name of result file for each method
         methods_name = {
             "All" : 'all_methods',
-            "Continuous Dictionnary" : 'CD',
-            "Discrete Dictionnairy" : 'DD',
+            "Continuous Dictionary" : 'CD',
+            "Discrete Dictionary" : 'DD',
             "NMF" : 'NMF'
         }
         
@@ -1997,7 +1997,7 @@ with tab_result:
 
             if st.session_state['result_type_export'] == "Approximations":
 
-                st.session_state['name_result_file'] = "Approx_granulo_analysis"
+                st.session_state['name_result_file'] = "Approx_and_original_curves"
                 if st.session_state['export_result_format'] == '.xlsx':
                     st.session_state["X-X_hat-X_ref"].to_excel("exports/"+st.session_state['name_result_file']+'.xlsx',sheet_name='Feuil1',index=True)
                 if st.session_state['export_result_format'] == '.csv':
@@ -2008,27 +2008,32 @@ with tab_result:
             elif st.session_state['result_type_export'] == "Proportions of decomposition":
                 st.session_state['name_result_file'] = "Proportion_"+methods_name[st.session_state['method_result']]+"_granulo_analysis"
                 
-                if st.session_state['method_result'] == "Continuous Dictionnary":
-                    dict_export = st.session_state['blasso_Prop']
-                elif st.session_state['method_result'] == "Discrete Dictionnary":
-                    dict_export = st.session_state['Prop_nn_lasso']
-                else :
+                if st.session_state['method_result'] == "NMF":
                     dict_export = st.session_state['Prop_nmf']
-
-                with open("exports/"+st.session_state['name_result_file']+".json", "w") as json_file:
-                    json.dump(dict_export, json_file, indent=4)
-
+                    if st.session_state['export_result_format'] == '.xlsx':
+                        dict_export.to_excel("exports/"+st.session_state['name_result_file']+'.xlsx',sheet_name='Feuil1',index=True)
+                    if st.session_state['export_result_format'] == '.csv':
+                        dict_export.to_csv("exports/"+st.session_state['name_result_file']+'.csv', float_format='%.4f', index=True)
+                    if st.session_state['export_result_format'] == '.txt':
+                        dict_export.to_csv("exports/"+st.session_state['name_result_file']+'.txt', float_format='%.4f', index=True)
+                else :
+                    if st.session_state['method_result'] == "Continuous Dictionary":
+                        dict_export = st.session_state['blasso_Prop']
+                    else:
+                        dict_export = st.session_state['Prop_nn_lasso']
+                    with open("exports/"+st.session_state['name_result_file']+".json", "w") as json_file:
+                        json.dump(dict_export, json_file, indent=4)
 
             else :
-                st.session_state['name_result_file'] = "Quality_approx_granulo_analysis"
+                st.session_state['name_result_file'] = "Quality_approx_"+methods_name[st.session_state['method_result']]+"_granulo_analysis"
 
                 # construction of a data frame that contains every quality measurement
                 qualities_approx = pd.DataFrame()
                 qualities_approx.index = st.session_state['granulometrics'].index
 
-                if st.session_state['method_result'] == "Continuous Dictionnary":
+                if st.session_state['method_result'] == "Continuous Dictionary":
                     qualities_approx = pd.concat([qualities_approx,st.session_state['cd_errors']], axis=1)
-                elif st.session_state['method_result'] == "Discrete Dictionnary":
+                elif st.session_state['method_result'] == "Discrete Dictionary":
                     qualities_approx = pd.concat([qualities_approx,st.session_state['dd_errors']], axis=1)
                 else :
                     qualities_approx = pd.concat([qualities_approx,st.session_state['nmf_errors']], axis=1)
@@ -2100,7 +2105,7 @@ with tab_result:
             #     )
         with col_dd:
             if st.session_state["flag_dd_prop"] and st.session_state["dd_flag"]:
-                st.markdown("<h3 style='text-align: center;'>[Discrete dictionnary]</h3>", unsafe_allow_html=True)
+                st.markdown("<h3 style='text-align: center;'>[Discrete Dictionary]</h3>", unsafe_allow_html=True)
                 st.markdown("---")
                 for label in st.session_state["selected_obs_labels"]:
                     prop = st.session_state['Prop_nn_lasso'][label]
@@ -2123,7 +2128,7 @@ with tab_result:
     
         with col_cd:
             if st.session_state["flag_cd_prop"] and st.session_state["cd_flag"]:
-                st.markdown("<h3 style='text-align: center;'>[Continuous dictionnary]</h3>", unsafe_allow_html=True)
+                st.markdown("<h3 style='text-align: center;'>[Continuous Dictionary]</h3>", unsafe_allow_html=True)
                 st.markdown("---")
                 for label in st.session_state["selected_obs_labels"]:
                     prop = st.session_state['blasso_Prop'][label]
@@ -2205,7 +2210,7 @@ with tab_result:
                         label_visibility="visible",
                     )
                 
-                st.markdown("<h5 style='text-align: center;'>[Discrete dictionnary]<br>Nb of components distribution</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center;'>[Discrete Dictionary]<br>Nb of components distribution</h5>", unsafe_allow_html=True)
                 fig = go.Figure(data=[go.Histogram(x=st.session_state['dd_errors']["nb components"])])
                 fig.update_layout(bargap=0.1, xaxis = {'tickfont' : {'size' : 30}}, height = 300, margin=dict(l=0, r=0, t=0, b=0))
                 st.plotly_chart(fig)
@@ -2236,7 +2241,7 @@ with tab_result:
                         value=f"{st.session_state['l2_mean_cd']:.4}",
                         label_visibility="visible",
                     )                
-                st.markdown("<h5 style='text-align: center;'>[Continuous dictionnary]<br>Nb of components distribution</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center;'>[Continuous Dictionary]<br>Nb of components distribution</h5>", unsafe_allow_html=True)
                 fig = go.Figure(data=[go.Histogram(x=st.session_state['cd_errors']["nb components"])])
                 fig.update_layout(bargap=0.1, xaxis = {'tickfont' : {'size' : 30}}, height = 300, margin=dict(l=0, r=0, t=0, b=0))
                 st.plotly_chart(fig)
