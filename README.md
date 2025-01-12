@@ -48,6 +48,30 @@ If you are on windows command keywords for Python may be differents. For the nex
 ### Python installation
 
 First check if you have python (version 3.0 or greater) and pip installed in your computer. Open a terminal window in your computer and run the following commands :
+
+
+### 2. **Utilisation d'onglets Markdown (GitHub Flavored Markdown - GFM)**
+
+
+<details>
+  <summary><strong>Linux/MacOS</strong></summary>
+
+  ```bash
+  sudo apt update && sudo apt install -y package-name
+  ./run.sh
+  ```
+</details>
+<details>
+  <summary><strong>Windows</strong></summary>
+
+  ```bash
+  sudo apt update && sudo apt install -y package-name
+  ./run.sh
+  ```
+</details>
+
+
+
 ```bash
 python3 --version
 pip --version
