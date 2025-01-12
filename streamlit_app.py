@@ -31,6 +31,7 @@ import subprocess
 import re
 from plotly.subplots import make_subplots
 import sys
+import os
 # from backends.numpy_functions import robust_nmf # --> for robust nmf algorithm (commented because we don't use this technique anymore)
 
 
@@ -43,7 +44,12 @@ st.title("Component identification on granulometric data")
 
 # removing old export file
 if  'clean_exports_flag' not in st.session_state:
-    subprocess.run("rm -f exports/*", shell=True, check=True)
+    
+    
+    if os.name == 'nt': # special case of Windows OS
+        subprocess.run("del /q exports\*", shell=True, check=True)
+    else:               # other cases : Unix
+        subprocess.run("rm -f exports/*", shell=True, check=True)
     st.session_state['clean_exports_flag'] = True
 
 
@@ -1173,7 +1179,6 @@ with tab_discrete_dict:
                         it += 1
 
                     if it == it_max:
-                        fegh = 3
                         st.warning("Non-convergence for Frank-Wolfe method")
 
                     # reconstruction with least-square problem to cancel bias
@@ -1238,7 +1243,6 @@ with tab_discrete_dict:
                         it += 1
 
                     if it == it_max:
-                        fegh = 3
                         st.warning("Non-convergence for Frank-Wolfe method")
 
                     # reconstruction with least-square problem to cancel bias
@@ -1251,11 +1255,15 @@ with tab_discrete_dict:
                 == "Proximal Gradient with backtracking"
             ):
 
+
                 def decomposition_algo(x, lambda_):
                     a = np.zeros(M.shape[1])
                     Mx = np.dot(M.T, x).reshape(a.shape)
                     it = 0
                     Li = 1
+                    
+                    f = partial(f_global, x_=x, lambda_=lambda_)
+
 
                     def prox_l1(z, t):
                         return np.sign(z) * np.maximum(

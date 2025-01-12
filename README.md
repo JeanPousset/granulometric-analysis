@@ -1,8 +1,9 @@
 Granulometric analysis web app
 ---
 - [Info](#Info)
-- [Installation](##Installation)
-- [Use](##Usage)
+- [Online use](#Online use)
+- [Local Installation](#Installation)
+- [Local use](#Locale use)
 ---
 
 # Info 
@@ -31,6 +32,10 @@ Code writer of the algorithme that produced the BLASSO results : [Clément Elvir
 You can easily use the online application via the link: https://granulometric-analysis.streamlit.app/ . 
 When you get to the page, you may have to click on the alert to restart the server. It automatically shuts down when there has been no access for 48 hours.
 
+
+You can also do some modifications on the app and run it locally on your computer. In that case follow the instruction in **Local Installation**. Then you can modify the app in the *streamlit_app.py* script and lunch it by following the instruction of **Local use**.
+
+
 # Local Installation
 
 Start by downloading or cloning the entire repository locally.
@@ -49,18 +54,19 @@ pip --version
 ```
 
 If not (an error is prompted) please install it with the following commands depending on your OS.
-- <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows : 
+- <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> **Windows** : 
 
 Go on [official python installation page](https://www.python.org/downloads/) and follow instruction to install it on Windows.
 
-- <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux:
+- <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> **Linux**:
 ```bash
 sudo apt update
 sudo apt install python3
 sudo apt install python3-pip
 ```
 
--  MacOS (with homebrew) :
+-  **MacOS** (with homebrew) :
+
 If you need you can find the installation documentation for homebrew  [here](https://brew.sh/)
 ```bash
 brew update
@@ -112,6 +118,11 @@ To run the app you just have to write the following command :
 streamlit run streamlit_app.py
 ```
 
+If you are in Windows <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> it may not work. Try :
+```bash
+py -m streamlit run streamlit_app.py
+```
+
 After a few seconds you should see this message on your terminal :
 
 ```bash
@@ -122,7 +133,7 @@ After a few seconds you should see this message on your terminal :
 >   External URL: http://90.49.34.45:8501
 ```
 
-It means the app has been successfully lunched. To access it please open the Local URL (here for me http://localhost:8501) in your browser. 
+It means the app has been successfully lunched. To access it please open the Local URL (in my case http://localhost:8501) in your browser. 
 
 To close the application go back to your terminal. You can simply close your terminal or press : ctrl+C  
 
