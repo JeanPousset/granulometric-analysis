@@ -92,9 +92,9 @@
 app</h2>
 <ul>
 <li><a href="#Info">Info</a></li>
-<li>[Online use](#Online use)</li>
+<li><a href="#Online-use">Online use</a></li>
 <li><a href="#Installation">Local Installation</a></li>
-<li>[Local use](#Locale use)</li>
+<li><a href="#Locale-use">Local use</a></li>
 </ul>
 <hr />
 <h1 id="info">Info</h1>
@@ -109,10 +109,10 @@ href="IRMAR_report/Rapport_IRMAR_décomposition_courbe_granulométriques_Jean_PO
 report</a></h3>
 <h3 id="guidance">Guidance:</h3>
 <ul>
-<li>[Valérie Monbet (IRMAR)] (<a
-href="https://perso.univ-rennes1.fr/valerie.monbet/">https://perso.univ-rennes1.fr/valerie.monbet/</a>)</li>
-<li>[Fabrice Mahé (IRMAR)] (<a
-href="https://perso.univ-rennes1.fr/fabrice.mahe/">https://perso.univ-rennes1.fr/fabrice.mahe/</a>)</li>
+<li><a href="https://perso.univ-rennes1.fr/valerie.monbet/">Valérie
+Monbet (IRMAR)</a></li>
+<li><a href="https://perso.univ-rennes1.fr/fabrice.mahe/">Fabrice Mahé
+(IRMAR)</a></li>
 </ul>
 <h3 id="data-proveiders-">Data proveiders :</h3>
 <ul>
@@ -134,117 +134,154 @@ Installation</strong>. Then you can modify the app in the
 <em>streamlit_app.py</em> script and lunch it by following the
 instruction of <strong>Local use</strong>.</p>
 <h1 id="local-installation">Local Installation</h1>
-<p>Start by downloading or cloning the entire repository locally.</p>
-<p>⚠️ <strong>Warning :
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15">
-WINDOWS users :</strong> ⚠️</p>
-<p>If you are on windows command keywords for Python may be differents.
-For the next steps, try replacing <code>python3</code> with
-<code>py</code> and <code>pip</code> with <code>py -m pip</code>.</p>
-<h3 id="python-installation">Python installation</h3>
+<h3 id="1-download-or-clone-the-entire-repository-locally">1) Download
+or clone the entire repository locally</h3>
+<h3 id="2-check-if-python-is-already-installed-">2) Check if Python is
+already installed :</h3>
 <p>First check if you have python (version 3.0 or greater) and pip
 installed in your computer. Open a terminal window in your computer and
 run the following commands :</p>
-<h3
-id="2-utilisation-donglets-markdown-github-flavored-markdown---gfm">2.
-<strong>Utilisation d'onglets Markdown (GitHub Flavored Markdown -
-GFM)</strong></h3>
-<p>Si vous hébergez votre fichier sur GitHub, vous pouvez utiliser une
-approche basée sur les commentaires HTML pour simuler des onglets avec
-des solutions comme <a
-href="https://github.com/ekalinin/github-markdown-toc">markdown-tabbed-content</a>.</p>
-<details>
-  <summary><strong>Linux/MacOS</strong></summary>
+<details open>
+  <summary><strong> <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows :</strong></summary>
 
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update <span class="kw">&amp;&amp;</span> <span class="fu">sudo</span> apt install <span class="at">-y</span> package-name</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./run.sh</span></span></code></pre></div>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">py</span> <span class="at">--version</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">py</span> <span class="at">-m</span> pip <span class="at">--version</span></span></code></pre></div>
 </details>
-<details>
-  <summary><strong>Windows</strong></summary>
+<details open>
+  <summary><strong><img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux /  MacOS :</strong></summary>
 
 <div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update <span class="kw">&amp;&amp;</span> <span class="fu">sudo</span> apt install <span class="at">-y</span> package-name</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./run.sh</span></span></code></pre></div>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">--version</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> <span class="at">--version</span></span></code></pre></div>
 </details>
 
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">--version</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> <span class="at">--version</span></span></code></pre></div>
-<p>If not (an error is prompted) please install it with the following
-commands depending on your OS.</p>
-<ul>
-<li><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15">
-<strong>Windows</strong> :</li>
-</ul>
+<p>If an error is prompted this probably means that Python is not
+installed. We are going to fix that.</p>
+<h3 id="3-install-python-if-necessary">3) Install Python if
+necessary</h3>
+<p>The procedure for python'installation depends on you operating system
+(OS). Click on your operating system to use the correct
+instructions.</p>
+<details>
+  <summary><big><strong><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows :</strong></big></summary>
+
 <p>Go on <a href="https://www.python.org/downloads/">official python
 installation page</a> and follow instruction to install it on
 Windows.</p>
-<ul>
-<li><img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15">
-<strong>Linux</strong>:</li>
-</ul>
+</details>
+
+<details>
+  <summary><big><strong><img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux :</strong></big></summary>
+
+<p>Open a terminal and run the following commands:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install python3</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install python3-pip</span></code></pre></div>
+</details>
+
+<details>
+  <summary><big><strong> MacOS</strong> (with homebrew) :</big></summary>
+
+<p><em>If needed, you can find the installation documentation for
+homebrew <a href="https://brew.sh/">here</a>.</em><br />
+Open a terminal and run the following commands:</p>
 <div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install python3</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install python3-pip</span></code></pre></div>
-<ul>
-<li> <strong>MacOS</strong> (with homebrew) :</li>
-</ul>
-<p>If you need you can find the installation documentation for homebrew
-<a href="https://brew.sh/">here</a></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> update</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install python</span></code></pre></div>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> update</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install python</span></code></pre></div>
 <p>If you don't want to use homebrew you can install python directly on
 the <a href="https://www.python.org/downloads/">official python
 installation page</a></p>
-<h3 id="streamlit-and-other-package">Streamlit and other package</h3>
+</details>
+
+<h3 id="4-install-streamlit-and-other-package">4) Install Streamlit and
+other package</h3>
+<p>Select your operating system (OS) and follow the isntructions.</p>
+<details>
+  <summary><big><strong> <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows :</strong></big></summary>
+
 <p>First you need to install streamlit (package to lunch web application
 in python). Open a terminal window and run this command :</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">py</span> <span class="at">-m</span> pip install streamlit</span></code></pre></div>
+<p>If the installation is successfull, the following command returns
+information about streamlit installation.</p>
 <div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install streamlit</span></code></pre></div>
-<p>If it doesn't work try with <code>pip3</code> instead of
-<code>pip</code>. Verify the installation with :</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">streamlit</span> <span class="at">--version</span></span></code></pre></div>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">py</span> <span class="at">-m</span> streamlit <span class="at">--version</span></span></code></pre></div>
 <p>Then install the other packages/dependancies with the following
 command (in the project repertory):</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span></code></pre></div>
 <p>You can also do it manually with :</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install numpy</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install pandas</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install scikit-learn</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install plotly</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install openpyxl</span></code></pre></div>
+</details>
+
+<details>
+  <summary><big><strong> <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux /  MacOS :</strong></big></summary>
+
+<p>First you need to install streamlit (package to lunch web application
+in python). Open a terminal window and run this command :</p>
 <div class="sourceCode" id="cb9"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install numpy</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install pandas</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install scikit-learn</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install plotly</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install openpyxl</span></code></pre></div>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install streamlit</span></code></pre></div>
+<p>If it doesn't work try with <code>pip3</code> instead of
+<code>pip</code>. Verify the installation with :</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">streamlit</span> <span class="at">--version</span></span></code></pre></div>
+<p>Then install the other packages/dependancies with the following
+command (in the project repertory):</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span></code></pre></div>
+<p>You can also do it manually with :</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install numpy</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install pandas</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install scikit-learn</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install plotly</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install openpyxl</span></code></pre></div>
+</details>
+
 <h1 id="locale-use">Locale use</h1>
 <p>Open a terminal and navigate to where you put or cloned the
 repository. (i.e type <code>cd {directory_path}</code> where
-<em>directory_path</em> is the path). When you type <code>ls</code> in
-the terminal you should have the following list prompted :</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ls</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> B-LASSO_imports       <span class="ex">README.md</span>             ref_curves_<span class="kw">&amp;</span><span class="ex">_exemples</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> Data                  <span class="ex">backends</span>              requirements.txt</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> IRMAR_report          <span class="ex">exports</span>               streamlit_app.py</span></code></pre></div>
-<p>To run the app you just have to write the following command :</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">streamlit</span> run streamlit_app.py</span></code></pre></div>
-<p>If you are in Windows
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15">
-it may not work. Try :</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">py</span> <span class="at">-m</span> streamlit run streamlit_app.py</span></code></pre></div>
-<p>After a few seconds you should see this message on your terminal
-:</p>
+<em>directory_path</em> is the path). When you type <code>ls</code> (or
+<code>dir</code> in Windows) in the terminal you should have the
+following list prompted :</p>
 <div class="sourceCode" id="cb13"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> You <span class="ex">can</span> now view your Streamlit app in your browser.</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> </span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span>   Local <span class="ex">URL:</span> http://localhost:8501</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span>   Network <span class="ex">URL:</span> http://192.168.1.18:8501</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span>   External <span class="ex">URL:</span> http://90.49.34.45:8501</span></code></pre></div>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ls  <span class="co"># or `dir` if you are on Windows </span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> B-LASSO_imports       <span class="ex">README.md</span>             ref_curves_<span class="kw">&amp;</span><span class="ex">_exemples</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> Data                  <span class="ex">backends</span>              requirements.txt</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> IRMAR_report          <span class="ex">exports</span>               streamlit_app.py</span></code></pre></div>
+<p>To run the app you just have to write the following command depending
+on your OS :</p>
+<details open>
+  <summary><strong> <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows :</strong></summary>
+
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">py</span> <span class="at">-m</span> streamlit run streamlit_app.py</span></code></pre></div>
+</details>
+<details open>
+  <summary><strong><img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux /  MacOS :</strong></summary>
+
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">streamlit</span> run streamlit_app.pys</span></code></pre></div>
+</details>
+
+<p>If you lunch streamlit for the first time you might have a message
+prompted in your terminal that invite you to give your email to get
+help. Just ignore it. After a few seconds you should see this message on
+your terminal.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> You <span class="ex">can</span> now view your Streamlit app in your browser.</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> </span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span>   Local <span class="ex">URL:</span> http://localhost:8501</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span>   Network <span class="ex">URL:</span> http://192.168.1.18:8501</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span>   External <span class="ex">URL:</span> http://90.49.34.45:8501</span></code></pre></div>
 <p>It means the app has been successfully lunched. To access it please
 open the Local URL (in my case http://localhost:8501) in your
 browser.</p>

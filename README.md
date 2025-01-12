@@ -1,9 +1,9 @@
 Granulometric analysis web app
 ---
 - [Info](#Info)
-- [Online use](#Online use)
+- [Online use](#Online-use)
 - [Local Installation](#Installation)
-- [Local use](#Locale use)
+- [Local use](#Locale-use)
 ---
 
 # Info 
@@ -18,8 +18,8 @@ DON'T HESITATE TO CONTACT ME FOR HELP / MORE EXPLANATIONS
 
 ### [Internship report](IRMAR_report/Rapport_IRMAR_décomposition_courbe_granulométriques_Jean_POUSSET.pdf)
 ### Guidance:
-- [Valérie Monbet (IRMAR)] (https://perso.univ-rennes1.fr/valerie.monbet/)
-- [Fabrice Mahé (IRMAR)] (https://perso.univ-rennes1.fr/fabrice.mahe/)
+- [Valérie Monbet (IRMAR)](https://perso.univ-rennes1.fr/valerie.monbet/)
+- [Fabrice Mahé (IRMAR)](https://perso.univ-rennes1.fr/fabrice.mahe/)
 
 ### Data proveiders :
 - François Pustoc'h (CreAAH)
@@ -38,71 +38,106 @@ You can also do some modifications on the app and run it locally on your compute
 
 # Local Installation
 
-Start by downloading or cloning the entire repository locally.
+### 1) Download or clone the entire repository locally
 
-⚠️ **Warning : <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> WINDOWS users :** ⚠️
-
-If you are on windows command keywords for Python may be differents. For the next steps, try replacing `python3` with `py` and `pip` with `py -m pip`.
-
-
-### Python installation
+### 2) Check if Python is already installed :
 
 First check if you have python (version 3.0 or greater) and pip installed in your computer. Open a terminal window in your computer and run the following commands :
 
-
-### 2. **Utilisation d'onglets Markdown (GitHub Flavored Markdown - GFM)**
-
-
-<details>
-  <summary><strong>Linux/MacOS</strong></summary>
+<details open>
+  <summary><strong> <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows :</strong></summary>
 
   ```bash
-  sudo apt update && sudo apt install -y package-name
-  ./run.sh
+py --version
+py -m pip --version
   ```
 </details>
-<details>
-  <summary><strong>Windows</strong></summary>
+<details open>
+  <summary><strong><img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux /  MacOS :</strong></summary>
 
   ```bash
-  sudo apt update && sudo apt install -y package-name
-  ./run.sh
-  ```
-</details>
-
-
-
-```bash
 python3 --version
 pip --version
-```
+  ```
+</details>
 
-If not (an error is prompted) please install it with the following commands depending on your OS.
-- <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> **Windows** : 
+If an error is prompted this probably means that Python is not installed. We are going to fix that.
+
+### 3) Install Python if necessary
+
+The procedure for python'installation depends on you operating system (OS). Click on your operating system to use the correct instructions.
+<details>
+  <summary><big><strong><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows :</strong></big></summary>
 
 Go on [official python installation page](https://www.python.org/downloads/) and follow instruction to install it on Windows.
 
-- <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> **Linux**:
-```bash
+</details>
+
+<details>
+  <summary><big><strong><img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux :</strong></big></summary>
+
+  Open a terminal and run the following commands:
+  
+  ```bash
 sudo apt update
 sudo apt install python3
 sudo apt install python3-pip
-```
+  ```
+</details>
 
--  **MacOS** (with homebrew) :
 
-If you need you can find the installation documentation for homebrew  [here](https://brew.sh/)
-```bash
+<details>
+  <summary><big><strong> MacOS</strong> (with homebrew) :</big></summary>
+
+  *If needed, you can find the installation documentation for homebrew [here](https://brew.sh/).*  
+  Open a terminal and run the following commands:
+  
+  ```bash
 brew update
 brew install python
+  ```
+
+  If you don't want to use homebrew you can install python directly on the [official python installation page](https://www.python.org/downloads/)
+</details>
+
+
+### 4) Install Streamlit and other package
+
+Select your operating system (OS) and follow the isntructions.
+
+<details>
+  <summary><big><strong> <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows :</strong></big></summary>
+
+  First you need to install streamlit (package to lunch web application in python). Open a terminal window and run this command :
+  ```bash
+py -m pip install streamlit
+  ```
+  If the installation is successfull, the following command returns information about streamlit installation.
+  ```bash
+py -m streamlit --version
+  ```
+
+Then install the other packages/dependancies with the following command (in the project repertory):
+```bash
+pip install -r requirements.txt
 ```
 
-If you don't want to use homebrew you can install python directly on the [official python installation page](https://www.python.org/downloads/)
+You can also do it manually with :
+```bash
+pip install numpy
+pip install pandas
+pip install scikit-learn
+pip install plotly
+pip install openpyxl
+```
+</details>
 
 
-### Streamlit and other package
 
-First you need to install streamlit (package to lunch web application in python). Open a terminal window and run this command :
+<details>
+  <summary><big><strong> <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux /  MacOS :</strong></big></summary>
+
+  First you need to install streamlit (package to lunch web application in python). Open a terminal window and run this command :
 ```bash
 pip install streamlit
 ```
@@ -124,30 +159,40 @@ pip install scikit-learn
 pip install plotly
 pip install openpyxl
 ```
+</details>
+
+
 
 
 # Locale use
 
-Open a terminal and navigate to where you put or cloned the repository. (i.e type `cd {directory_path}` where *directory_path* is the path). When you type `ls` in the terminal you should have the following list prompted :
+Open a terminal and navigate to where you put or cloned the repository. (i.e type `cd {directory_path}` where *directory_path* is the path). When you type `ls` (or `dir` in Windows) in the terminal you should have the following list prompted :
 
 ```bash
-$ ls
+$ ls  # or `dir` if you are on Windows 
 > B-LASSO_imports       README.md             ref_curves_&_exemples
 > Data                  backends              requirements.txt
 > IRMAR_report          exports               streamlit_app.py
 ```
 
-To run the app you just have to write the following command :
-```bash
-streamlit run streamlit_app.py
-```
+To run the app you just have to write the following command depending on your OS :
+<details open>
+  <summary><strong> <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> Windows :</strong></summary>
 
-If you are in Windows <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/1920px-Windows_logo_-_2012_%28dark_blue%29.svg.png" alt="Logo Windows" width="15"> it may not work. Try :
-```bash
+  ```bash
 py -m streamlit run streamlit_app.py
-```
+  ```
+</details>
+<details open>
+  <summary><strong><img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg" alt="Logo Linux" width="15"> Linux /  MacOS :</strong></summary>
 
-After a few seconds you should see this message on your terminal :
+  ```bash
+streamlit run streamlit_app.pys
+  ```
+</details>
+
+If you lunch streamlit for the first time you might have a message prompted in your terminal that invite you to give your email to get help. Just ignore it.
+After a few seconds you should see this message on your terminal. 
 
 ```bash
 > You can now view your Streamlit app in your browser.
