@@ -119,16 +119,16 @@ py -m streamlit --version
 
 Then install the other packages/dependancies with the following command (in the project repertory):
 ```bash
-pip install -r requirements.txt
+py -m pip install -r requirements.txt
 ```
 
 You can also do it manually with :
 ```bash
-pip install numpy
-pip install pandas
-pip install scikit-learn
-pip install plotly
-pip install openpyxl
+py -m pip install numpy
+py -m pip install pandas
+py -m pip install scikit-learn
+py -m pip install plotly
+py -m pip install openpyxl
 ```
 </details>
 
