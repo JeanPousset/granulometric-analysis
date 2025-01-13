@@ -230,6 +230,7 @@ with tab_intro:
         st.markdown("<h2 style='text-align: center;'>Granulometric (grain-size) data</h2>", unsafe_allow_html=True)
         st.write(" ")
         st.page_link("https://raw.githubusercontent.com/JeanPousset/granulometric-analysis/main/IRMAR_report/Rapport_IRMAR_d%C3%A9composition_courbe_granulom%C3%A9triques_Jean_POUSSET.pdf", label="*Click here to read project report (more context and information)*", icon="📄")
+        st.page_link("https://github.com/JeanPousset/granulometric-analysis", label="*Github reposistory (open source code)*", icon="🛠️")
         st.write(" ")
         st.write("""In a sample of raw earth we can find several types of components. These take the form of a 
                     more or less recognizable peak in a distribution curve. These components are classified 
